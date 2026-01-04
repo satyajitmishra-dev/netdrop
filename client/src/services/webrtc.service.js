@@ -1,4 +1,5 @@
 import { socketService } from "./socket.service";
+// WebRTC Service - Handles P2P Data & Signaling
 
 const RTC_CONFIG = {
     iceServers: [
@@ -13,6 +14,15 @@ class WebRTCService {
         this.dataChannel = null;
         this.onDataReceived = null;
         this.targetPeerId = null;
+
+        // File Transfer State
+        this.incomingFile = {
+            buffer: [],
+            meta: null,
+            receivedSize: 0,
+            startTime: 0
+        };
+
         this.init();
     }
 
@@ -35,8 +45,10 @@ class WebRTCService {
     }
 
     // Initiator: Start connection
-    async connectToPeer(targetPeerId) {
+    async connectToPeer(targetPeerId, payload = null) {
         this.targetPeerId = targetPeerId;
+        this.pendingPayload = payload;
+
         this.createPeerConnection();
 
         // Create Data Channel
@@ -106,13 +118,50 @@ class WebRTCService {
     }
 
     setupDataChannel(channel) {
+        channel.binaryType = 'arraybuffer'; // Crucial for file transfer
+
         channel.onopen = () => {
             console.log("Data Channel OPEN");
+            if (this.pendingPayload) {
+                if (this.pendingPayload instanceof File) {
+                    this.sendFile(this.pendingPayload);
+                } else {
+                    this.sendData(JSON.stringify(this.pendingPayload));
+                }
+                this.pendingPayload = null;
+            }
         };
+
         channel.onmessage = (event) => {
-            console.log("Received data:", event.data);
-            if (this.onDataReceived) {
-                this.onDataReceived(event.data);
+            const { data } = event;
+
+            // Handle Binary Chunk (File)
+            if (data instanceof ArrayBuffer) {
+                this.handleFileChunk(data);
+                return;
+            }
+
+            // Handle JSON (Signaling/Text)
+            try {
+                const parsed = JSON.parse(data);
+
+                if (parsed.type === 'file-start') {
+                    this.incomingFile.meta = parsed.meta;
+                    this.incomingFile.buffer = [];
+                    this.incomingFile.receivedSize = 0;
+                    this.incomingFile.startTime = Date.now();
+                    console.log(`Receiving file: ${parsed.meta.name} (${parsed.meta.size} bytes)`);
+                }
+                else {
+                    if (this.onDataReceived) {
+                        this.onDataReceived(parsed, this.targetPeerId);
+                    }
+                }
+            } catch (e) {
+                console.warn("Received non-JSON text:", data);
+                if (this.onDataReceived) {
+                    this.onDataReceived(data, this.targetPeerId);
+                }
             }
         };
     }
@@ -122,6 +171,65 @@ class WebRTCService {
             this.dataChannel.send(data);
         } else {
             console.error("Data Channel not open");
+        }
+    }
+
+    async sendFile(file) {
+        const CHUNK_SIZE = 16 * 1024; // 16KB
+
+        // 1. Send Metadata
+        this.sendData(JSON.stringify({
+            type: 'file-start',
+            meta: {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            }
+        }));
+
+        // 2. Read and Send Chunks
+        const arrayBuffer = await file.arrayBuffer();
+        for (let i = 0; i < arrayBuffer.byteLength; i += CHUNK_SIZE) {
+            const chunk = arrayBuffer.slice(i, i + CHUNK_SIZE);
+
+            // Wait for buffer to clear if too full
+            if (this.dataChannel.bufferedAmount > 16 * 1024 * 1024) { // 16MB buffer limit
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            this.sendData(chunk);
+        }
+
+        console.log("File sent successfully");
+        if (this.onSendProgress) {
+            this.onSendProgress({ type: 'complete', file: file });
+        }
+    }
+
+    handleFileChunk(buffer) {
+        if (!this.incomingFile.meta) return;
+
+        this.incomingFile.buffer.push(buffer);
+        this.incomingFile.receivedSize += buffer.byteLength;
+
+        // Progress Calculation (Optional: emit progress event)
+        // const progress = this.incomingFile.receivedSize / this.incomingFile.meta.size;
+
+        if (this.incomingFile.receivedSize >= this.incomingFile.meta.size) {
+            const blob = new Blob(this.incomingFile.buffer, { type: this.incomingFile.meta.type });
+
+            // Emit Complete
+            if (this.onDataReceived) {
+                this.onDataReceived({
+                    type: 'file-complete',
+                    file: blob,
+                    meta: this.incomingFile.meta
+                }, this.targetPeerId);
+            }
+
+            // Reset
+            this.incomingFile = { buffer: [], meta: null, receivedSize: 0, startTime: 0 };
+            console.log("File reception complete");
         }
     }
 }

@@ -9,12 +9,21 @@ import DiscoveryGrid from './components/Transfer/DiscoveryGrid';
 import RemoteUpload from './components/Remote/RemoteUpload';
 import SecureDownload from './pages/SecureDownload';
 import Login from './components/Auth/Login';
+import TextShareModal from './components/Transfer/TextShareModal';
 
 function App() {
   const dispatch = useDispatch();
   const { peers, activeTab, myDevice } = useSelector((state) => state.transfer);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [isDownloadPage, setIsDownloadPage] = useState(false);
+
+  const [textModal, setTextModal] = useState({
+    isOpen: false,
+    mode: 'send', // 'send' | 'receive'
+    peer: null,
+    text: ''
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
 
   useEffect(() => {
     // Check if we are on a download page
@@ -23,12 +32,84 @@ function App() {
       return;
     }
 
-    // Device Name Logic
-    const savedName = localStorage.getItem('netdrop_device_name');
-    const deviceName = savedName || "Device-" + Math.floor(Math.random() * 1000);
-    if (!savedName) localStorage.setItem('netdrop_device_name', deviceName);
+    // Smart Device Detection
+    const detectDevice = () => {
+      const ua = navigator.userAgent;
+      let type = 'desktop';
+      let defaultName = 'Device';
 
-    dispatch(setMyDevice({ name: deviceName }));
+      if (/ipad|tablet/i.test(ua)) type = 'tablet';
+      else if (/mobile/i.test(ua)) type = 'mobile';
+
+      if (/windows/i.test(ua)) defaultName = 'Windows PC';
+      else if (/macintosh|mac os x/i.test(ua)) defaultName = 'MacBook';
+      else if (/android/i.test(ua)) defaultName = 'Android';
+      else if (/iphone/i.test(ua)) defaultName = 'iPhone';
+      else if (/linux/i.test(ua)) defaultName = 'Linux PC';
+
+      return { type, defaultName: `${defaultName}-${Math.floor(Math.random() * 1000)}` };
+    };
+
+    const { type, defaultName } = detectDevice();
+
+    // Use saved name or generated default
+    let deviceName = localStorage.getItem('netdrop_device_name');
+    if (!deviceName) {
+      deviceName = defaultName;
+      localStorage.setItem('netdrop_device_name', deviceName);
+    }
+
+    dispatch(setMyDevice({ name: deviceName, type }));
+
+    // WebRTC Data Listener
+    import('./services/webrtc.service').then(({ webRTCService }) => {
+      webRTCService.onDataReceived = (data, dataPeerId) => {
+        if (data.type === 'text') {
+          // Robust Sender Name: Use payload sender OR fallback to ID
+          const senderInfo = data.sender || { name: 'Unknown Device', type: 'desktop' };
+
+          setTextModal({
+            isOpen: true,
+            mode: 'receive',
+            peer: senderInfo,
+            text: data.content
+          });
+          // Play notification sound if desired
+        }
+        else if (data.type === 'file-complete') {
+          // ... (Keep existing file toast logic)
+          toast((t) => (
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <span className="font-bold flex items-center gap-2 text-emerald-400">
+                <Shield size={16} /> File Received
+              </span>
+              <div className="text-sm">
+                <p className="font-medium text-white">{data.meta.name}</p>
+                <p className="text-xs text-text-muted">{(data.meta.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="bg-secondary text-white px-3 py-1 rounded text-xs flex-1"
+                  onClick={() => {
+                    const url = URL.createObjectURL(data.file);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.meta.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    toast.dismiss(t.id);
+                  }}>
+                  Download
+                </button>
+                <button className="bg-slate-700 text-white px-3 py-1 rounded text-xs"
+                  onClick={() => toast.dismiss(t.id)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ), { duration: Infinity, position: 'top-right' });
+        }
+      };
+    });
 
     // Socket & Discovery Init
     const socket = socketService.connect();
@@ -36,8 +117,9 @@ function App() {
     const handleConnect = () => {
       // Only announce if visible
       if (!document.hidden) {
-        discoveryService.init({ name: deviceName, type: 'desktop' });
+        discoveryService.init({ name: deviceName, type });
         toast.success("Connected to NetDrop Network", {
+          id: 'netdrop-connect',
           style: { background: '#0f172a', color: '#fff', border: '1px solid #2563EB' }
         });
       }
@@ -51,7 +133,7 @@ function App() {
       } else {
         // Re-announce presence
         if (socket.connected) {
-          discoveryService.init({ name: deviceName, type: 'desktop' });
+          discoveryService.init({ name: deviceName, type });
           console.log("👀 App active - Announced presence");
         }
       }
@@ -80,8 +162,8 @@ function App() {
       const file = e.target.files[0];
       if (!file) return;
 
-      // Advanced Logic: Auto-Cloud Switch for Large Files (>100MB)
-      const SIZE_LIMIT = 100 * 1024 * 1024; // 100 MB
+      // Advanced Logic: Auto-Cloud Switch for Large Files (>10MB)
+      const SIZE_LIMIT = 10 * 1024 * 1024; // 10 MB
       if (file.size > SIZE_LIMIT) {
         toast((t) => (
           <div className="flex flex-col gap-2">
@@ -89,7 +171,7 @@ function App() {
               <Shield size={16} /> Large File Detected
             </span>
             <p className="text-sm">
-              Files over 100MB are better sent via Secure Cloud to ensure stability.
+              Files over 10MB are better sent via Secure Cloud to ensure stability.
             </p>
             <div className="flex gap-2 mt-1">
               <button
@@ -116,7 +198,12 @@ function App() {
 
       // Normal WebRTC Transfer
       import('./services/webrtc.service').then(({ webRTCService }) => {
-        webRTCService.connectToPeer(peer.id, file); // Need to update service to accept file as 2nd arg
+        webRTCService.onSendProgress = (status) => {
+          if (status.type === 'complete') {
+            toast.success('Sent Successfully', { id: 'handshake' });
+          }
+        };
+        webRTCService.connectToPeer(peer.id, file);
       });
       toast.loading(`Sending ${file.name} to ${peer.name}...`, { id: 'handshake' });
     };
@@ -125,13 +212,24 @@ function App() {
 
   // 2. Right Click: Text Share
   const handleRightClickPeer = (peer) => {
-    // Simple prompt (MVP) - In Phase 4 make this a custom modal
-    const text = prompt(`Send text to ${peer.name}:`);
-    if (text) {
+    setTextModal({
+      isOpen: true,
+      mode: 'send',
+      peer: peer,
+      text: ''
+    });
+  };
+
+  const handleSendText = (text) => {
+    if (textModal.peer) {
       import('./services/webrtc.service').then(({ webRTCService }) => {
-        // We need a specific method or flag for text
-        // For now, we'll just log or todo
-        toast.success("Text sent! (Mock)");
+        webRTCService.connectToPeer(textModal.peer.id, {
+          type: 'text',
+          content: text,
+          sender: myDevice // Pass my own device info
+        });
+        toast.success(`Sent to ${textModal.peer.name}`);
+        setTextModal({ ...textModal, isOpen: false }); // Close modal after sending
       });
     }
   };
@@ -151,6 +249,15 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Toaster position="top-center" reverseOrder={false} />
+
+      <TextShareModal
+        isOpen={textModal.isOpen}
+        onClose={() => setTextModal({ ...textModal, isOpen: false })}
+        mode={textModal.mode}
+        peerName={textModal.peer?.name || 'Unknown Device'}
+        initialText={textModal.text}
+        onSend={handleSendText}
+      />
 
       {/* Background Ambience */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -195,18 +302,37 @@ function App() {
               <div className="flex flex-col md:flex-row items-center justify-center gap-2 text-text-muted">
                 <div className="flex items-center gap-2">
                   {myDevice?.type === 'mobile' ? <Smartphone size={16} /> : <Monitor size={16} />}
-                  <span className="text-sm">Visible as:
-                    <span className="text-secondary font-medium ml-1 cursor-pointer hover:underline"
-                      onClick={() => {
-                        const newName = prompt("Enter new device name:", myDevice?.name);
-                        if (newName && newName.trim()) {
-                          localStorage.setItem('netdrop_device_name', newName.trim());
-                          window.location.reload(); // Simple reload to re-announce
-                        }
-                      }}
-                    >
-                      {myDevice?.name} ✎
-                    </span>
+                  <span className="text-sm flex items-center gap-2">Visible as:
+                    {isEditingName ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        className="bg-transparent border-b border-secondary text-secondary font-medium w-32 focus:outline-none text-center"
+                        defaultValue={myDevice?.name}
+                        onBlur={(e) => {
+                          const newName = e.target.value.trim();
+                          setIsEditingName(false);
+                          if (newName && newName !== myDevice?.name) {
+                            localStorage.setItem('netdrop_device_name', newName);
+                            window.location.reload();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="text-secondary font-medium cursor-pointer hover:bg-secondary/10 px-2 py-1 rounded transition-colors flex items-center gap-1 group relative"
+                        onClick={() => setIsEditingName(true)}
+                        title="Click to edit device name"
+                      >
+                        {myDevice?.name}
+                        <span className="opacity-0 group-hover:opacity-50 text-[10px]">✎</span>
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>

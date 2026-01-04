@@ -1,43 +1,49 @@
 import React from 'react';
-import { Smartphone, Monitor } from 'lucide-react'; // Assuming these icons are intended to be imported
+import { Smartphone, Monitor, Laptop, Tablet } from 'lucide-react';
 
 const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer }) => {
-    return (
-        <div className="relative w-96 h-96 flex items-center justify-center">
-            {/* Radar Scanning Effect */}
-            <div className="absolute inset-0 rounded-full border border-secondary/20 animate-pulse-slow" />
-            <div className="absolute inset-4 rounded-full border border-secondary/10" />
-            <div className="absolute inset-1/4 rounded-full border border-secondary/5" />
+    // Premium Icons based on device type (if we had that data, defaulting to generic for now)
+    const getDeviceIcon = (type) => {
+        if (type === 'mobile') return <Smartphone size={24} />;
+        if (type === 'tablet') return <Tablet size={24} />;
+        return <Laptop size={24} />;
+    };
 
-            {/* Scanning Line */}
-            <div className="absolute inset-0 rounded-full overflow-hidden">
-                <div className="w-1/2 h-full bg-gradient-to-r from-transparent to-secondary/10 origin-right animate-[spin_4s_linear_infinite]" />
+    return (
+        <div className="relative w-full aspect-square max-w-[400px] mx-auto flex items-center justify-center">
+            {/* Premium Radar Background */}
+            <div className="absolute inset-0 rounded-full border border-secondary/10 bg-secondary/5 backdrop-blur-[2px]" />
+            <div className="absolute inset-[15%] rounded-full border border-secondary/10" />
+            <div className="absolute inset-[35%] rounded-full border border-secondary/5" />
+
+            {/* Animated Scanning Radar */}
+            <div className="absolute inset-0 rounded-full overflow-hidden opacity-50">
+                <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-secondary/10 to-secondary/30 origin-right animate-[spin_3s_linear_infinite]" />
             </div>
 
-            {/* Me (Center) */}
-            <div className="relative z-10 w-20 h-20 rounded-full bg-surface border-2 border-secondary shadow-[0_0_30px_rgba(37,99,235,0.3)] flex flex-col items-center justify-center">
-                <div className="w-3 h-3 bg-secondary rounded-full animate-ping absolute top-2 right-2" />
+            {/* Me (Center) with Glow */}
+            <div className="relative z-20 w-20 h-20 rounded-2xl bg-slate-900/90 border border-secondary/50 shadow-[0_0_40px_rgba(37,99,235,0.4)] flex flex-col items-center justify-center backdrop-blur-md group">
+                <div className="absolute w-full h-full bg-secondary/20 rounded-2xl animate-pulse-slow blur-xl -z-10 group-hover:bg-secondary/40 transition-all" />
                 <span className="text-2xl">👤</span>
-                <span className="text-xs font-bold text-secondary mt-1">Me</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-secondary mt-1">You</span>
             </div>
 
             {/* Peers (Orbiting) */}
             {peers.map((peer, index) => {
-                // Calculate random-ish positions on the orbit for demo purposes
-                // In real app, we might want fixed slots or physics-based layout
+                // Responsive Positioning using Percentages
                 const angle = (index / peers.length) * 2 * Math.PI;
-                const radius = 140; // px
-                // Original calculation for top/left was based on percentage, new one uses px for transform
-                // Let's adapt to use px for transform as per the instruction's style
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
+                // Radius is ~35% of the container to fit nicely
+                const radiusPercent = 35;
+                const x = 50 + Math.cos(angle) * radiusPercent;
+                const y = 50 + Math.sin(angle) * radiusPercent;
 
                 return (
                     <button
                         key={peer.id}
-                        className="absolute group flex flex-col items-center justify-center transition-all duration-500 hover:scale-110 z-10"
+                        className="absolute w-16 h-16 -ml-8 -mt-8 flex flex-col items-center justify-center transition-all duration-300 hover:scale-110 z-30 group"
                         style={{
-                            transform: `translate(${x}px, ${y}px)`,
+                            left: `${x}%`,
+                            top: `${y}%`,
                         }}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -49,27 +55,32 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer }) => {
                             onRightClickPeer && onRightClickPeer(peer);
                         }}
                     >
-                        {/* Peer Icon */}
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-lg transition-all duration-300
+                        {/* Peer Icon with Premium Glass Effect */}
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-xl shadow-lg transition-all duration-300 border
                             ${peer.type === 'mobile'
-                                ? 'bg-indigo-500/20 border border-indigo-500/50 shadow-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white'
-                                : 'bg-secondary/20 border border-secondary/50 shadow-secondary/20 text-secondary group-hover:bg-secondary group-hover:text-white'
+                                ? 'bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.2)] text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white group-hover:shadow-indigo-500/50'
+                                : 'bg-blue-500/10 border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] text-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-blue-500/50'
                             }`}
                         >
-                            {peer.type === 'mobile' ? <Smartphone size={24} /> : <Monitor size={24} />}
+                            {getDeviceIcon(peer.type)}
                         </div>
 
                         {/* Name Tag */}
-                        <span className="mt-2 text-xs font-medium text-slate-400 bg-slate-900/80 px-2 py-1 rounded-full border border-slate-700/50 group-hover:border-slate-600 transition-colors">
+                        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-semibold text-white bg-slate-900/90 px-3 py-1.5 rounded-lg border border-white/10 whitespace-nowrap z-50 shadow-xl pointer-events-none">
                             {peer.name || 'Device'}
+                        </span>
+
+                        {/* Always visible shortened name for mobile if needed, but hover is cleaner for premium look */}
+                        <span className="md:hidden mt-1 text-[10px] font-medium text-slate-400 truncate max-w-[80px]">
+                            {peer.name}
                         </span>
                     </button>
                 );
             })}
 
             {peers.length === 0 && (
-                <div className="absolute bottom-4 text-center w-full">
-                    <p className="text-sm text-text-muted animate-pulse">Scanning for devices...</p>
+                <div className="absolute bottom-4 text-center w-full animate-bounce">
+                    <p className="text-xs text-secondary/70 tracking-widest uppercase font-semibold">Scanning...</p>
                 </div>
             )}
         </div>
