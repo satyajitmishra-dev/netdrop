@@ -29,7 +29,15 @@ Since NetDrop uses **WebSockets** (for device discovery) and **Client-Side Encry
     *   `FIREBASE_SERVICE_ACCOUNT`: (Paste the entire JSON string)
     *   `PORT`: `10000` (Render sets this auto-magically, but good to know).
 6.  **Deploy**: Click **Create Web Service**.
-7.  **Copy URL**: Once live, copy the URL (e.g., `https://netdrop-server.onrender.com`). You need this for Part 2.
+7.  **Deploy** and copy the **Render URL** (e.g., `https://netdrop-server.onrender.com`).
+
+> **⚠️ Important: Prevent Sleeping**
+> Render's free tier spins down after 15 minutes of inactivity. To keep it awake 24/7 for free:
+> 1.  Go to [cron-job.org](https://cron-job.org/en/) (Free).
+> 2.  Create a generic cron job.
+> 3.  **URL**: `https://netdrop-server.onrender.com/health` (The health check endpoint).
+> 4.  **Schedule**: Every 14 minutes.
+> 5.  This keeps your WebSocket server active ready for instant connections! You need this for Part 2.
 
 > **Note**: The Free tier on Render "sleeps" after 15 mins of inactivity. The first request might take 30s to wake it up.
 

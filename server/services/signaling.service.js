@@ -11,6 +11,14 @@ export class SignalingService {
 
             // Handle device discovery (presence)
             socket.on("announce-presence", (userData) => {
+                // Deduplicate: Remove any existing user with same name
+                for (const [id, user] of this.connectedUsers.entries()) {
+                    if (user.name === userData.name && id !== socket.id) {
+                        this.connectedUsers.delete(id);
+                        socket.broadcast.emit('peer-left', { id });
+                    }
+                }
+
                 // Store user data
                 this.connectedUsers.set(socket.id, { id: socket.id, ...userData });
 
