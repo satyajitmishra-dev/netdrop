@@ -1,0 +1,60 @@
+import { getPresignedUploadUrl, getPresignedDownloadUrl } from "../services/storage.service.js";
+import { v4 as uuidv4 } from "uuid";
+import FileModel from "../models/file.model.js";
+
+export const initializeUpload = async (req, res) => {
+    try {
+        const { name, size, type, encrypted } = req.body;
+
+        // Generate a unique file ID
+        const fileId = uuidv4();
+        const key = `${fileId}.enc`;
+
+        // Get Presigned URL
+        const uploadUrl = await getPresignedUploadUrl(key, "application/octet-stream");
+
+        // Save metadata to MongoDB
+        await FileModel.create({
+            fileId,
+            name,
+            size,
+            type,
+            encrypted: !!encrypted
+        });
+
+        res.status(200).json({
+            fileId,
+            key,
+            uploadUrl,
+        });
+    } catch (error) {
+        console.error("Upload Init Error:", error);
+        res.status(500).json({ error: "Failed to initialize upload" });
+    }
+};
+
+export const getDownloadLink = async (req, res) => {
+    try {
+        const { fileId } = req.params;
+        const key = `${fileId}.enc`;
+
+        // 1. Get Presigned Download URL
+        const downloadUrl = await getPresignedDownloadUrl(key);
+
+        // 2. Fetch Metadata from DB
+        const fileDoc = await FileModel.findOne({ fileId });
+
+        if (!fileDoc) {
+            return res.status(404).json({ error: "File metadata not found" });
+        }
+
+        res.status(200).json({
+            downloadUrl,
+            fileName: fileDoc.name,
+            fileType: fileDoc.type
+        });
+    } catch (error) {
+        console.error("Download Link Error:", error);
+        res.status(500).json({ error: "Failed to generate download link" });
+    }
+};
