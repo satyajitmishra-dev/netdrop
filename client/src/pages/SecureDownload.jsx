@@ -1,112 +1,139 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Key, Download, FileCheck, Loader2, AlertTriangle } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Lock, Download, FileText, ShieldAlert, Loader2, Shield } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { apiService } from '../services/api.service';
 import { cryptoService } from '../services/crypto.service';
-import { toast } from 'react-hot-toast';
+import { useSelector } from 'react-redux';
+import Login from '../components/Auth/Login';
 
 const SecureDownload = () => {
+    const { fileId } = useParams();
+    const { user, isAuthenticated } = useSelector((state) => state.auth);
+
     const [passcode, setPasscode] = useState('');
-    const [fileId, setFileId] = useState('');
-    const [status, setStatus] = useState('idle'); // idle, downloading, decrypting, success, error
+    const [loading, setLoading] = useState(false);
+    const [decryptedFile, setDecryptedFile] = useState(null);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        // Extract fileId from URL manually
-        const pathParts = window.location.pathname.split('/');
-        if (pathParts[1] === 'download' && pathParts[2]) {
-            setFileId(pathParts[2]);
+    // Auto-extract fileId if not in params (e.g. if using a different route structure)
+    // But strictly useParams is best. 
+
+    const handleDownload = async (e) => {
+        e.preventDefault();
+        if (!isAuthenticated) {
+            toast.error("Please log in to verify your identity.");
+            return;
         }
-    }, []);
 
-    const handleDownload = async () => {
-        if (!passcode || !fileId) return;
+        setLoading(true);
+        const toastId = toast.loading("Verifying & Decrypting...");
 
         try {
-            setStatus('downloading');
-
-            // 1. Get Presigned URL & Metadata
-            const { downloadUrl, fileName } = await apiService.getDownloadLink(fileId);
+            // 1. Get Presigned URL
+            const { downloadUrl, fileName, keySalt, iv } = await apiService.getDownloadLink(fileId);
 
             // 2. Fetch Encrypted Blob
             const response = await fetch(downloadUrl);
-            if (!response.ok) throw new Error("File not found or expired");
-            const encryptedBuffer = await response.arrayBuffer();
+            if (!response.ok) throw new Error("Failed to fetch file data");
+            const encryptedBlob = await response.blob();
+            const encryptedBuffer = await encryptedBlob.arrayBuffer();
 
-            setStatus('decrypting');
+            // 3. Derive Key & Decrypt
+            const key = await cryptoService.deriveKeyFromPasscode(passcode, keySalt);
+            const decryptedBuffer = await cryptoService.decryptFile(encryptedBuffer, key, iv);
 
-            // 3. Extract Salt (16 bytes) + IV (12 bytes) + Encrypted Data
-            const salt = encryptedBuffer.slice(0, 16);
-            const iv = encryptedBuffer.slice(16, 28);
-            const encryptedData = encryptedBuffer.slice(28);
+            // 4. Create Download Link
+            const blob = new Blob([decryptedBuffer]);
+            const url = URL.createObjectURL(blob);
+            setDecryptedFile({ url, name: fileName });
 
-            // 4. Derive Key
-            const key = await cryptoService.deriveKeyFromPasscode(passcode, salt);
-
-            // 5. Decrypt
-            const decryptedData = await cryptoService.decrypt(encryptedData, key, iv);
-
-            // 6. Trigger Download
-            const blob = new Blob([decryptedData]);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName || `decrypted-file-${fileId}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-
-            setStatus('success');
-            toast.success("File Unlocked & Downloaded!");
-
-        } catch (error) {
-            console.error(error);
-            setStatus('error');
-            toast.error("Decryption failed. Check passcode.");
+            toast.success("Decryption Successful!", { id: toastId });
+        } catch (err) {
+            console.error(err);
+            setError("Invalid Passcode or Permissions");
+            toast.error("Decryption Failed", { id: toastId });
+        } finally {
+            setLoading(false);
         }
     };
 
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl max-w-md w-full p-8 text-center">
+                    <ShieldAlert className="w-16 h-16 text-orange-500 mb-6 mx-auto" />
+                    <h2 className="text-2xl font-bold text-white mb-2">Secure Access Required</h2>
+                    <p className="text-slate-400 mb-8">This file is protected by NetDrop Enterprise encryption. Please sign in to verify your identity.</p>
+                    <Login />
+                </div>
+            </div>
+        );
+    }
+
+    if (decryptedFile) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-300">
+                    <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 mx-auto ring-1 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                        <FileText className="w-10 h-10 text-emerald-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-1">{decryptedFile.name}</h2>
+                    <p className="text-emerald-400 text-sm mb-8 font-medium">Ready for Download</p>
+
+                    <a
+                        href={decryptedFile.url}
+                        download={decryptedFile.name}
+                        className="w-full py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-2 group"
+                        onClick={() => setTimeout(() => URL.revokeObjectURL(decryptedFile.url), 1000)}
+                    >
+                        <Download className="group-hover:animate-bounce" size={20} />
+                        Save File
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="card max-w-md w-full p-8 text-center border-emerald-500/20 shadow-lg shadow-emerald-500/5 bg-slate-900/80 backdrop-blur-xl">
-                <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Download className="w-8 h-8 text-emerald-500" />
+            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl max-w-md w-full p-8">
+                <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-6 mx-auto ring-1 ring-blue-500/50 rotate-3 transition-transform hover:rotate-6">
+                    <Lock className="w-8 h-8 text-blue-500" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-white mb-2">Secure Download</h1>
-                <p className="text-text-muted mb-6">Enter the passcode to decrypt and download this file.</p>
+                <h2 className="text-2xl font-bold text-white mb-2 text-center">Secure Download</h2>
+                <p className="text-slate-400 text-center mb-8 text-sm">
+                    Enter the unique security passcode to decrypt this file.
+                </p>
 
-                {!fileId ? (
-                    <div className="text-red-400 bg-red-400/10 p-4 rounded-lg">
-                        <AlertTriangle className="inline-block mr-2 mb-1" size={16} />
-                        Invalid Link
+                <form onSubmit={handleDownload} className="w-full flex flex-col gap-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Enter Passcode"
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-center tracking-widest font-mono text-lg"
+                            value={passcode}
+                            onChange={(e) => setPasscode(e.target.value)}
+                            required
+                        />
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="relative">
-                            <Key className="absolute left-3 top-3 text-text-muted" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Enter Passcode/Key"
-                                value={passcode}
-                                onChange={(e) => setPasscode(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:border-emerald-500 outline-none font-mono text-center tracking-widest text-lg"
-                            />
-                        </div>
 
-                        <button
-                            onClick={handleDownload}
-                            disabled={status === 'downloading' || status === 'decrypting'}
-                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                        >
-                            {status === 'downloading' ? <Loader2 className="animate-spin inline mr-2" /> :
-                                status === 'decrypting' ? <Loader2 className="animate-spin inline mr-2" /> :
-                                    <Shield className="inline mr-2" size={18} />}
+                    {error && <p className="text-red-400 text-xs text-center">{error}</p>}
 
-                            {status === 'downloading' ? 'Downloading Encrypted Blob...' :
-                                status === 'decrypting' ? 'Decrypting Zero-Knowledge...' :
-                                    'Unlock & Download'}
-                        </button>
-                    </div>
-                )}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {loading ? <Loader2 className="animate-spin" /> : <> <Shield size={18} /> Decrypt & Download </>}
+                    </button>
+                </form>
+
+                <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-slate-500 font-mono">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    End-to-End Encrypted via AES-GCM-256
+                </div>
             </div>
         </div>
     );
