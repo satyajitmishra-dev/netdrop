@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
-import { Shield, Zap, History, Smartphone, Monitor } from 'lucide-react';
+import { Shield, Zap, History, Smartphone, Monitor, Link, Users, Info, LogOut, User as UserIcon, Lock } from 'lucide-react';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
+import { auth } from './config/firebase.config';
+import { setUser, logout } from './store/slices/auth.slice';
 import { socketService } from './services/socket.service';
 import { discoveryService } from './services/discovery.service';
 import { setMyDevice, setActiveTab } from './store/slices/transfer.slice';
+
 import DiscoveryGrid from './components/Transfer/DiscoveryGrid';
 import RemoteUpload from './components/Remote/RemoteUpload';
 import SecureDownload from './pages/SecureDownload';
@@ -13,9 +17,50 @@ import TextShareModal from './components/Transfer/TextShareModal';
 
 function App() {
   const dispatch = useDispatch();
-  const { peers, activeTab, myDevice } = useSelector((state) => state.transfer);
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { activeTab, myDevice, peers } = useSelector((state) => state.transfer);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [isEditingName, setIsEditingName] = useState(false);
   const [isDownloadPage, setIsDownloadPage] = useState(false);
+
+  // --- Session Management (3 Hour Limit + Token Refresh) ---
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Enforce 3-hour session limit
+        const lastSignIn = new Date(currentUser.metadata.lastSignInTime).getTime();
+        const now = Date.now();
+        const threeHours = 3 * 60 * 60 * 1000;
+
+        if (now - lastSignIn > threeHours) {
+          await signOut(auth);
+          dispatch(logout());
+          toast.error("Session expired. Please log in again.");
+          return;
+        }
+
+        // Refresh Redux State with new/current token
+        const token = await currentUser.getIdToken();
+        dispatch(setUser({
+          user: {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL,
+          },
+          token
+        }));
+      } else {
+        dispatch(logout());
+      }
+    });
+
+    return () => unsubscribe();
+  }, [dispatch]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    toast.success("Logged out");
+  };
 
   const [textModal, setTextModal] = useState({
     isOpen: false,
@@ -23,7 +68,7 @@ function App() {
     peer: null,
     text: ''
   });
-  const [isEditingName, setIsEditingName] = useState(false);
+
 
   useEffect(() => {
     // Check if we are on a download page
@@ -246,9 +291,19 @@ function App() {
     );
   }
 
+  // ... (Keep existing imports and state logic up to return)
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <Toaster position="top-center" reverseOrder={false} />
+    <div className="fixed inset-0 w-full h-full flex flex-col items-center bg-slate-950 overflow-hidden text-slate-200 font-sans selection:bg-blue-500/30">
+      <Toaster position="top-center" reverseOrder={false} toastOptions={{
+        style: {
+          background: '#0f172a',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '12px 20px',
+        },
+      }} />
 
       <TextShareModal
         isOpen={textModal.isOpen}
@@ -259,114 +314,195 @@ function App() {
         onSend={handleSendText}
       />
 
-      {/* Background Ambience */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
+      {/* --- Ambient Background (Single Blue Tone) --- */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-900/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-800/5 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
       </div>
 
-      <header className="absolute top-0 w-full p-6 flex justify-between items-center max-w-7xl mx-auto z-50">
+      {/* --- Mobile Header --- */}
+      <header className="md:hidden absolute top-0 w-full p-4 flex justify-between items-center z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-secondary to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Zap className="w-6 h-6 text-white" />
+          <div className="relative w-8 h-8">
+            <div className="absolute inset-0 bg-blue-500 rounded-lg rotate-6 opacity-20" />
+            <div className="absolute inset-0 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 z-10">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-            NetDrop
-          </h1>
+          <h1 className="text-lg font-bold text-white tracking-tight">NetDrop</h1>
         </div>
-        <nav className="flex gap-4">
-          {['local', 'remote'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => dispatch(setActiveTab(tab))}
-              className={`text-sm px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-2
-                 ${activeTab === tab
-                  ? 'bg-white/10 text-white border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-                  : 'text-text-muted hover:text-white hover:bg-white/5'}`}
-            >
-              {tab === 'local' ? <Zap size={14} /> : <Shield size={14} />}
-              {tab === 'local' ? 'Local Share' : 'Secure Cloud'}
-            </button>
-          ))}
-          <button className="text-text-muted hover:text-white p-2 rounded-full hover:bg-white/5 transition-colors">
-            <History size={20} />
+
+        <div className="flex items-center gap-3">
+          <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all" title="About">
+            <Info size={18} />
           </button>
-        </nav>
+          {isAuthenticated ? (
+            <button onClick={handleLogout} className="relative">
+              <img src={user?.photoURL} alt="User" className="w-8 h-8 rounded-full border border-blue-500/30" />
+            </button>
+          ) : (
+            <button
+              onClick={() => dispatch(setActiveTab('remote'))}
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+              title="Sign In"
+            >
+              <UserIcon size={18} />
+            </button>
+          )}
+        </div>
       </header>
 
-      <main className="w-full max-w-5xl z-10 flex flex-col items-center mt-20">
-        {activeTab === 'local' ? (
-          <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-500">
-            <div className="mb-8 text-center px-4">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-3">Nearby Devices</h2>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-2 text-text-muted">
-                <div className="flex items-center gap-2">
-                  {myDevice?.type === 'mobile' ? <Smartphone size={16} /> : <Monitor size={16} />}
-                  <span className="text-sm flex items-center gap-2">Visible as:
-                    {isEditingName ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        className="bg-transparent border-b border-secondary text-secondary font-medium w-32 focus:outline-none text-center"
-                        defaultValue={myDevice?.name}
-                        onBlur={(e) => {
-                          const newName = e.target.value.trim();
-                          setIsEditingName(false);
-                          if (newName && newName !== myDevice?.name) {
-                            localStorage.setItem('netdrop_device_name', newName);
-                            window.location.reload();
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.target.blur();
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className="text-secondary font-medium cursor-pointer hover:bg-secondary/10 px-2 py-1 rounded transition-colors flex items-center gap-1 group relative"
-                        onClick={() => setIsEditingName(true)}
-                        title="Click to edit device name"
-                      >
-                        {myDevice?.name}
-                        <span className="opacity-0 group-hover:opacity-50 text-[10px]">✎</span>
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </div>
+      {/* --- Header (Desktop) --- */}
+      <header className="hidden md:flex absolute top-0 w-full p-6 justify-between items-center max-w-7xl mx-auto z-50">
+        <div className="flex items-center gap-4 group cursor-default min-w-fit">
+          <div className="relative w-11 h-11">
+            <div className="absolute inset-0 bg-blue-500 rounded-xl rotate-6 opacity-20 group-hover:rotate-12 transition-transform duration-500" />
+            <div className="absolute inset-0 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 z-10">
+              <Zap className="w-6 h-6 text-white text-shadow-sm" />
             </div>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">NetDrop</h1>
+            <p className="text-[10px] text-blue-300/80 font-bold uppercase tracking-[0.2em]">Secure Transfer</p>
+          </div>
+        </div>
 
-            <div className="relative py-10 scale-125">
+        <nav className="flex gap-2 p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-full shadow-2xl mx-auto">
+          {[
+            { id: 'local', icon: Zap, label: 'Local Share' },
+            { id: 'remote', icon: Link, label: 'Remote' },
+            { id: 'room', icon: Users, label: 'Room' },
+            { id: 'vault', icon: Lock, label: 'Vault' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => dispatch(setActiveTab(tab.id))}
+              className={`relative px-4 lg:px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2.5
+                 ${activeTab === tab.id
+                  ? 'text-white shadow-lg bg-blue-600'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-3 min-w-fit justify-end">
+          <button className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-all transform active:scale-95" title="About">
+            <Info size={20} />
+          </button>
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full pl-1 pr-4 py-1 transition-all cursor-default">
+              <img src={user?.photoURL} alt="User" className="w-8 h-8 rounded-full border border-blue-500/30" />
+              <button onClick={handleLogout} className="text-xs font-bold text-slate-300 hover:text-red-400 transition-colors uppercase tracking-wider flex items-center gap-1.5">
+                Logout <LogOut size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => dispatch(setActiveTab('remote'))}
+              className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+              title="Sign In"
+            >
+              <UserIcon size={20} />
+            </button>
+          )}
+        </div>
+      </header>
+
+
+      {/* --- Main Content Area --- */}
+      <main className="relative z-10 flex-1 w-full flex flex-col pt-20 md:pt-24 pb-20 md:pb-0 scrollbar-hide">
+        {activeTab === 'local' ? (
+          <div className="w-full h-full flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-full h-full max-w-[1600px] mx-auto relative">
               <DiscoveryGrid
                 peers={peers}
                 onSelectPeer={handlePeerSelect}
                 onRightClickPeer={handleRightClickPeer}
+                myDeviceName={myDevice?.name}
+                isEditingName={isEditingName}
+                onEditName={() => setIsEditingName(true)}
+                onNameChange={(e) => {
+                  const newName = e.target.value.trim();
+                  setIsEditingName(false);
+                  if (newName && newName !== myDevice?.name) {
+                    localStorage.setItem('netdrop_device_name', newName);
+                    window.location.reload();
+                  }
+                }}
               />
             </div>
           </div>
-        ) : (
-          <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
-            {isAuthenticated ? (
-              <div className="flex flex-col items-center w-full">
-                {/* Show User Profile Snippet */}
-                <div className="flex items-center gap-4 mb-8 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                  <img src={user?.photoURL} alt="Profile" className="w-12 h-12 rounded-full border-2 border-accent" />
-                  <div className="text-left">
-                    <h3 className="text-white font-bold">{user?.displayName}</h3>
-                    <p className="text-text-muted text-xs">{user?.email}</p>
-                  </div>
-                </div>
-                <RemoteUpload />
+        ) : activeTab === 'remote' ? (
+          <div className="w-full flex-1 flex flex-col items-center justify-start pt-16 md:pt-10 p-4 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto">
+            <div className="w-full max-w-md mx-auto text-center space-y-4">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
+                <Link size={40} className="text-blue-400" />
               </div>
-            ) : (
-              <Login />
-            )}
+              <h2 className="text-2xl font-bold text-white">Remote Link</h2>
+              <p className="text-slate-400 max-w-md mx-auto">Connect and transfer files between valid devices over the internet.</p>
+              <span className="inline-block px-3 py-1 bg-blue-900/30 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">COMING SOON</span>
+            </div>
           </div>
+        ) : activeTab === 'room' ? (
+          <div className="w-full flex-1 flex flex-col items-center justify-start pt-16 md:pt-10 p-4 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto">
+            <div className="w-full max-w-md mx-auto text-center space-y-4">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
+                <Users size={40} className="text-blue-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Community Rooms</h2>
+              <p className="text-slate-400 max-w-md mx-auto">Join local network rooms to chat and share files with groups.</p>
+              <span className="inline-block px-3 py-1 bg-blue-900/30 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">COMING SOON</span>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full flex-1 flex flex-col items-center justify-start pt-12 md:pt-10 p-4 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-y-auto">
+            {
+              isAuthenticated ? (
+                <div className="w-full max-w-xl flex flex-col items-center gap-8 mb-10" >
+                  <div className="flex items-center gap-4 bg-slate-900/50 backdrop-blur-md p-3 pr-6 rounded-full border border-white/10 shadow-xl">
+                    <img src={user?.photoURL} alt="Profile" className="w-10 h-10 rounded-full border-2 border-blue-500/50" />
+                    <div className="text-left">
+                      <h3 className="text-white font-bold text-sm leading-none mb-1">{user?.displayName}</h3>
+                      <p className="text-blue-400 text-[10px] font-bold uppercase tracking-wider">{user?.email}</p>
+                    </div>
+                  </div>
+                  <RemoteUpload />
+                </div>
+              ) : (
+                <Login />
+              )
+            }
+          </div >
         )}
-      </main>
-    </div>
+      </main >
+
+      {/* --- Mobile Navigation (Bottom Bar) --- */}
+      < nav className="md:hidden absolute bottom-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 pb-6 pt-3 px-2 flex justify-between items-center overflow-x-auto scrollbar-hide" >
+        {
+          [
+            { id: 'local', icon: Zap, label: 'Local' },
+            { id: 'remote', icon: Link, label: 'Remote' },
+            { id: 'room', icon: Users, label: 'Room' },
+            { id: 'vault', icon: Lock, label: 'Vault' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => dispatch(setActiveTab(tab.id))}
+              className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-2xl transition-all duration-300 min-w-[70px]
+                        ${activeTab === tab.id ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 1.5} />
+              <span className="text-[9px] font-bold uppercase tracking-wider">{tab.label}</span>
+            </button>
+          ))
+        }
+      </nav >
+
+    </div >
   );
 }
 

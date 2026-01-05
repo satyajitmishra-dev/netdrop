@@ -39,6 +39,23 @@ class SocketService {
         }
         return this.socket;
     }
+    createPairCode(callback) {
+        if (!this.socket) {
+            console.error('Socket not initialized in createPairCode');
+            return;
+        }
+        console.log('Emitting create-pair-code');
+        this.socket.emit('create-pair-code');
+        this.socket.once('pair-code-created', (code) => {
+            console.log('Received pair-code-created:', code);
+            callback(code);
+        });
+    }
+
+    joinWithCode(code) {
+        if (!this.socket) return;
+        this.socket.emit('join-with-code', code);
+    }
 }
 
 export const socketService = new SocketService();

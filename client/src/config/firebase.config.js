@@ -10,6 +10,13 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+if (!firebaseConfig.apiKey) {
+    console.error("❌ Firebase API Key is MISSING in client/.env! Secure Cloud features will fail.");
+    console.error("Check if .env file exists and starts with VITE_FIREBASE_...");
+} else {
+    console.log("✅ Firebase Config Loaded with Key:", firebaseConfig.apiKey.substring(0, 5) + "...");
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();

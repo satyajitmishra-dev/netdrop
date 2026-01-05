@@ -6,6 +6,12 @@ export const initializeUpload = async (req, res) => {
     try {
         const { name, size, type, encrypted } = req.body;
 
+        // Enforce 50MB limit
+        const MAX_SIZE = 50 * 1024 * 1024;
+        if (size > MAX_SIZE) {
+            return res.status(400).json({ error: "File too large. Max 50MB allowed." });
+        }
+
         // Generate a unique file ID
         const fileId = uuidv4();
         const key = `${fileId}.enc`;

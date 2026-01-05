@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
+    "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "firebase": "^12.7.0",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

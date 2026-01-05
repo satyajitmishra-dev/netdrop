@@ -36,9 +36,9 @@ const Login = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center p-8 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl max-w-sm w-full">
-            <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-blue-500/50">
-                <ShieldCheck className="w-8 h-8 text-blue-500" />
+        <div className="glass-panel flex flex-col items-center justify-center p-8 max-w-sm w-full">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-blue-500/30 shadow-lg shadow-blue-500/10">
+                <ShieldCheck className="w-8 h-8 text-blue-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Enterprise Access</h2>
             <p className="text-slate-400 text-center mb-8 text-sm">
@@ -48,7 +48,7 @@ const Login = () => {
             <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
+                className="btn-primary w-full py-3.5 text-base flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
             >
                 {loading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
@@ -57,7 +57,9 @@ const Login = () => {
                     </>
                 )}
             </button>
-            <p className="mt-4 text-xs text-slate-600">Protected by Firebase Auth</p>
+            <p className="mt-4 text-xs text-slate-500 flex items-center gap-1.5">
+                <ShieldCheck size={12} /> Protected by Firebase Auth
+            </p>
         </div>
     );
 };
