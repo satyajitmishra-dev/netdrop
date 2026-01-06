@@ -37,7 +37,7 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
     const filteredPeers = peers.filter(p => p.name !== myDeviceName);
 
     return (
-        <div className="relative w-full h-[calc(100vh-140px)] min-h-[500px] flex justify-center overflow-hidden">
+        <div className="relative w-full h-full min-h-[500px] flex justify-center overflow-hidden">
 
             {/* --- Premium Radar Ripples (Full Screen Cover) --- */}
             <div className="absolute inset-x-0 bottom-24 flex items-center justify-center pointer-events-none">
@@ -239,10 +239,10 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                 {
                     filteredPeers.length === 0 && (
                         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 text-center pointer-events-none w-full px-4">
-                            <h1 className="text-white text-3xl md:text-4xl font-bold mb-4 tracking-tight drop-shadow-xl w-full mx-auto text-center">
+                            <h1 className="text-white text-2xl md:text-4xl font-bold mb-4 tracking-tight drop-shadow-xl w-full mx-auto text-center px-4">
                                 Open <span className="text-blue-400">NetDrop</span> on other devices
                             </h1>
-                            <p className="text-slate-400 text-lg md:text-xl font-light tracking-wide whitespace-nowrap">
+                            <p className="text-slate-400 text-base md:text-xl font-light tracking-wide whitespace-nowrap">
                                 Waiting for devices{loadingDots}
                             </p>
                         </div>

@@ -8,10 +8,50 @@ export class SignalingService {
     setupListeners() {
         this.io.on("connection", (socket) => {
             const clientIp = socket.handshake.address; // Simple IP detection
-            const room = `network:${clientIp}`;
+            let room = `network:${clientIp}`; // Default to IP-based room
             socket.join(room);
 
             console.log(`[Signaling] User connected: ${socket.id} | IP: ${clientIp} | Room: ${room}`);
+
+            // --- Room Management ---
+            socket.on('join-room', ({ roomName }) => {
+                const oldRoom = room;
+                const newRoom = roomName ? `room:${roomName}` : `network:${clientIp}`; // If empty, back to local
+
+                if (oldRoom === newRoom) return;
+
+                console.log(`[Rooms] ${socket.id} switching from ${oldRoom} to ${newRoom}`);
+
+                // 1. Leave old room
+                socket.leave(oldRoom);
+                socket.to(oldRoom).emit("peer-left", { id: socket.id });
+
+                // 2. Join new room
+                socket.join(newRoom);
+                room = newRoom; // Update tracking variable
+
+                // 3. Update User Data Registry with new room
+                const currentUser = this.connectedUsers.get(socket.id);
+                if (currentUser) {
+                    this.connectedUsers.set(socket.id, { ...currentUser, room: newRoom });
+
+                    // 4. Announce to NEW room
+                    socket.to(newRoom).emit("peer-presence", currentUser);
+
+                    // 5. Get peers from NEW room
+                    const peersInRoom = Array.from(this.connectedUsers.values()).filter(
+                        (peer) => peer.room === newRoom && peer.id !== socket.id
+                    );
+                    socket.emit("active-peers", peersInRoom);
+                }
+            });
+
+            socket.on('broadcast-room-text', (data) => {
+                // Relay string/json to everyone else in current room
+                // data = { text, sender }
+                socket.to(room).emit('room-text-received', data);
+            });
+
 
             // Handle device discovery (presence)
             socket.on("announce-presence", (userData) => {
@@ -108,7 +148,7 @@ export class SignalingService {
                 this.connectedUsers.delete(socket.id);
 
                 if (user) {
-                    // Notify room
+                    // Notify room (User data has current room)
                     this.io.to(user.room).emit("peer-left", { id: socket.id });
                 }
             });

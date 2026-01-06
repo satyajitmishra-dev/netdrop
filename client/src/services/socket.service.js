@@ -56,6 +56,26 @@ class SocketService {
         if (!this.socket) return;
         this.socket.emit('join-with-code', code);
     }
+
+    createRoom(roomName, callback) {
+        if (!this.socket) return;
+        this.socket.emit('create-room', { roomName }, callback);
+    }
+
+    joinRoomByCode(passcode, callback) {
+        if (!this.socket) return;
+        this.socket.emit('join-room-by-code', { passcode }, callback);
+    }
+
+    leaveRoom() {
+        if (!this.socket) return;
+        this.socket.emit('leave-room');
+    }
+
+    broadcastText(text, sender) {
+        if (!this.socket) return;
+        this.socket.emit('broadcast-room-text', { text, sender });
+    }
 }
 
 export const socketService = new SocketService();
