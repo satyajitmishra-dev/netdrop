@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5004/api";
+const API_URL = import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? "/api" : "http://localhost:5004/api");
 
 // Helper to get token from Redux store (via local storage or direct access if easier, 
 // but for cleaner service architecture, we'll try to get it from the store instance if possible or localStorage)

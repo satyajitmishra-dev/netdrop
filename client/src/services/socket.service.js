@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5004";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? "/" : "http://localhost:5004");
 
 class SocketService {
     constructor() {
@@ -12,7 +12,7 @@ class SocketService {
 
         this.socket = io(SOCKET_URL, {
             withCredentials: true,
-            transports: ["websocket"],
+            transports: ["websocket", "polling"],
         });
 
         this.socket.on("connect", () => {

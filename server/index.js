@@ -15,6 +15,9 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+// Trust Proxy (Required for Production behind Nginx/Load Balancers)
+app.set("trust proxy", 1);
+
 // Middleware
 app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",

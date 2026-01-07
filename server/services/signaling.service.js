@@ -7,7 +7,9 @@ export class SignalingService {
 
     setupListeners() {
         this.io.on("connection", (socket) => {
-            const clientIp = socket.handshake.address; // Simple IP detection
+            // Robust IP detection for Production (behind proxy/LB)
+            const forwarded = socket.handshake.headers['x-forwarded-for'];
+            const clientIp = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
             let room = `network:${clientIp}`; // Default to IP-based room
             socket.join(room);
 
