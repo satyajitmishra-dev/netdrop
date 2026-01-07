@@ -1,6 +1,8 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
@@ -8,6 +10,9 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.config.js";
 import { SignalingService } from "./services/signaling.service.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 connectDB();
@@ -23,10 +28,16 @@ app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true
 }));
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve Static Files (Production)
+app.use(express.static(path.join(__dirname, "../client/dist")));
 
 // Socket.io Setup
 const io = new Server(server, {
@@ -46,6 +57,11 @@ app.use("/api/files", fileRoutes);
 // Health Check
 app.get("/health", (req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// SPA Fallback (Serve index.html for non-API routes)
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/dist/index.html"));
 });
 
 const PORT = process.env.PORT || 5004;
