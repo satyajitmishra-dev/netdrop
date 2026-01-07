@@ -26,9 +26,9 @@ const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onS
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
             <div
-                className="w-full max-w-lg bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 pb-safe"
+                className="w-full max-w-lg bg-gradient-to-b from-slate-800 to-slate-900 border-t border-x md:border border-slate-700/50 rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 pb-safe"
                 onClick={(e) => e.stopPropagation()}
             >
 

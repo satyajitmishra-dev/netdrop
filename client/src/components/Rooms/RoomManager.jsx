@@ -19,6 +19,8 @@ const RoomManager = ({ onPeerSelect }) => {
 
     // Broadcast Text State
     const [textModalOpen, setTextModalOpen] = useState(false);
+    const [selectedPeer, setSelectedPeer] = useState(null); // For per-peer text sharing
+    const [textModalMode, setTextModalMode] = useState('broadcast'); // 'broadcast' | 'peer'
 
     // Listen for incoming broadcast text
     useEffect(() => {
@@ -84,9 +86,32 @@ const RoomManager = ({ onPeerSelect }) => {
 
     const handleBroadcastText = (text) => {
         if (mode !== 'active') return;
-        socketService.broadcastText(text, myDevice);
-        toast.success("Message broadcasted to room!");
+
+        if (textModalMode === 'peer' && selectedPeer) {
+            // Send to specific peer via WebRTC
+            import('../../services/webrtc.service').then(({ webRTCService }) => {
+                webRTCService.connectToPeer(selectedPeer.id, {
+                    type: 'text',
+                    content: text,
+                    sender: myDevice
+                });
+                toast.success(`Sent to ${selectedPeer.name}`);
+            });
+        } else {
+            // Broadcast to room
+            socketService.broadcastText(text, myDevice);
+            toast.success("Message broadcasted to room!");
+        }
+
         setTextModalOpen(false);
+        setSelectedPeer(null);
+        setTextModalMode('broadcast');
+    };
+
+    const handlePeerTextShare = (peer) => {
+        setSelectedPeer(peer);
+        setTextModalMode('peer');
+        setTextModalOpen(true);
     };
 
     const handleBroadcastFile = async () => {
@@ -126,35 +151,35 @@ const RoomManager = ({ onPeerSelect }) => {
 
     if (mode === 'menu') {
         return (
-            <div className="w-full max-w-md mx-auto space-y-8 duration-500 pt-10">
-                <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-[0_0_30px_-5px_rgba(59,130,246,0.3)]">
-                        <Users size={40} className="text-blue-400" />
+            <div className="w-full max-w-sm mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                <div className="text-center space-y-3">
+                    <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-blue-500/20 shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)]">
+                        <Users size={32} className="text-blue-400" />
                     </div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">Community Rooms</h2>
-                    <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
-                        Create or join a private room to share files with a specific group of people.
+                    <h2 className="text-2xl font-bold text-white tracking-tight">Community Rooms</h2>
+                    <p className="text-slate-400 text-xs px-4 leading-relaxed">
+                        Join a private secure room to share files with a specific group.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={() => setMode('create')}
-                        className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-2xl transition-all group"
+                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-blue-500/50 rounded-xl transition-all group active:scale-[0.98]"
                     >
-                        <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Plus size={24} className="text-blue-400" />
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus size={20} className="text-blue-400" />
                         </div>
-                        <span className="font-bold text-white">Create Room</span>
+                        <span className="font-semibold text-sm text-slate-200 group-hover:text-white">Create Room</span>
                     </button>
                     <button
                         onClick={() => setMode('join')}
-                        className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl transition-all group"
+                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-emerald-500/50 rounded-xl transition-all group active:scale-[0.98]"
                     >
-                        <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Key size={24} className="text-emerald-400" />
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Key size={20} className="text-emerald-400" />
                         </div>
-                        <span className="font-bold text-white">Join Room</span>
+                        <span className="font-semibold text-sm text-slate-200 group-hover:text-white">Join Room</span>
                     </button>
                 </div>
             </div>
@@ -283,12 +308,11 @@ const RoomManager = ({ onPeerSelect }) => {
                             <DiscoveryGrid
                                 peers={peers}
                                 onSelectPeer={(peer) => {
-                                    // Default behavior in room is broadcast usually, but if user clicks specific peer, maybe direct?
-                                    // For now let's just trigger direct send as standard
+                                    // Direct file send to specific peer
                                     if (onPeerSelect) onPeerSelect(peer);
                                 }}
                                 myDeviceName={myDevice?.name}
-                                onRightClickPeer={() => { }}
+                                onRightClickPeer={handlePeerTextShare}
                             />
                         )}
                     </div>
@@ -297,9 +321,13 @@ const RoomManager = ({ onPeerSelect }) => {
 
             <TextShareModal
                 isOpen={textModalOpen}
-                onClose={() => setTextModalOpen(false)}
+                onClose={() => {
+                    setTextModalOpen(false);
+                    setSelectedPeer(null);
+                    setTextModalMode('broadcast');
+                }}
                 mode="send"
-                peerName={`Everyone in ${activeRoomInfo?.name}`}
+                peerName={textModalMode === 'peer' && selectedPeer ? selectedPeer.name : `Everyone in ${activeRoomInfo?.name}`}
                 onSend={handleBroadcastText}
             />
         </div>

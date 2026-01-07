@@ -66,12 +66,20 @@ const PairingInterface = ({ onPairSuccess }) => {
 
     const handleGenerateCode = () => {
         setIsLoading(true);
-        // Reset code so animation can re-trigger if needed, though usually new code implies change
         setCode('');
+
+        // Safety timeout
+        const safetyTimer = setTimeout(() => {
+            if (isLoading) {
+                setIsLoading(false);
+                toast.error("Network timeout. Please try again.");
+            }
+        }, 5000);
+
         socketService.createPairCode((newCode) => {
+            clearTimeout(safetyTimer);
             setCode(newCode);
             setIsLoading(false);
-            // Set 5 min expiry visual timer if needed, simplified for now
             setExpiryTime(Date.now() + 5 * 60 * 1000);
         });
     };
@@ -84,6 +92,9 @@ const PairingInterface = ({ onPairSuccess }) => {
         }
 
         setIsLoading(true);
+        // Safety timeout for join
+        setTimeout(() => setIsLoading(false), 5000);
+
         socketService.joinWithCode(inputCode);
     };
 
@@ -93,70 +104,73 @@ const PairingInterface = ({ onPairSuccess }) => {
     };
 
     return (
-        <div className="w-full max-w-md mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 md:px-0 pb-24 md:pb-0">
+        <div className="w-full max-w-md mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 md:px-0 pb-24 md:pb-0 safe-bottom">
 
-            {/* Header / Mode Switcher */}
-            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 relative">
-                <div
-                    className={`absolute inset-y-1 w-[48%] bg-blue-600 rounded-lg shadow-lg transition-all duration-300 ease-out ${mode === 'receive' ? 'left-1' : 'left-[51%]'}`}
-                />
-                <button
-                    onClick={() => setMode('receive')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium z-10 transition-colors ${mode === 'receive' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                    <Cast size={16} />
-                    Receive
-                </button>
-                <button
-                    onClick={() => setMode('join')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium z-10 transition-colors ${mode === 'join' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                    <ArrowRight size={16} />
-                    Join
-                </button>
-            </div>
+            {/* Main Card Container */}
+            <div className="bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-8 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
 
-            <div className="bg-slate-900/30 backdrop-blur-md rounded-2xl border border-slate-700/30 p-8 flex flex-col items-center text-center shadow-xl">
+                {/* Tab Switcher Integrated */}
+                <div className="flex w-full bg-slate-950/50 p-1 rounded-xl border border-white/5 mb-8 relative">
+                    <div
+                        className={`absolute inset-y-1 w-[49%] bg-blue-600 rounded-lg shadow-lg transition-all duration-300 ease-out ${mode === 'receive' ? 'left-1' : 'left-[50%]'}`}
+                    />
+                    <button
+                        onClick={() => setMode('receive')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold z-10 transition-colors ${mode === 'receive' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Cast size={16} />
+                        Receive
+                    </button>
+                    <button
+                        onClick={() => setMode('join')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold z-10 transition-colors ${mode === 'join' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <ArrowRight size={16} />
+                        Join
+                    </button>
+                </div>
+
                 {mode === 'receive' ? (
-                    <>
-                        <div className="mb-6 relative">
-                            <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse-slow"></div>
-                            <div className="relative text-6xl font-mono font-bold tracking-widest text-white select-all">
+                    <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
+                        <div className="mb-8 relative w-full flex justify-center">
+                            <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse-slow"></div>
+                            <div className="relative text-5xl md:text-6xl font-mono font-bold tracking-widest text-white select-all whitespace-nowrap z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                                 {isLoading ? (
-                                    <span className="text-4xl animate-pulse">...</span>
+                                    <span className="animate-pulse">...</span>
                                 ) : (
                                     tempCode.split('').map((char, i) => (
-                                        <span key={i} className="inline-block mx-1">{char}</span>
+                                        <span key={i} className="inline-block">{char}</span>
                                     ))
                                 )}
                             </div>
                         </div>
 
-                        <p className="text-slate-400 text-sm mb-6">
-                            Enter this code on another device to connect securely.
-                            <br />Code expires in 5 minutes.
+                        <p className="text-slate-400 text-sm mb-8 font-medium leading-relaxed max-w-[80%]">
+                            Enter this code on the other device<br />to connect securely.
                         </p>
 
                         <div className="flex gap-3 w-full">
                             <button
                                 onClick={copyCode}
-                                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-slate-700"
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border border-white/5 active:scale-[0.98]"
                             >
-                                <Copy size={18} />
+                                <Copy size={20} />
                                 Copy Code
                             </button>
                             <button
                                 onClick={handleGenerateCode}
-                                className="w-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all flex items-center justify-center border border-slate-700"
+                                disabled={isLoading}
+                                className="w-14 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all flex items-center justify-center border border-white/5 active:scale-[0.98] disabled:opacity-50"
                                 title="Refresh Code"
                             >
-                                <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+                                <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
                             </button>
                         </div>
-                    </>
+                    </div>
                 ) : (
-                    <form onSubmit={handleJoin} className="w-full space-y-6">
-                        <div className="space-y-2">
+                    <form onSubmit={handleJoin} className="w-full space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="space-y-3 text-left">
+                            <label className="text-sm font-bold text-slate-400 ml-1">ENTER CODE</label>
                             <input
                                 type="text"
                                 value={inputCode}
@@ -165,16 +179,15 @@ const PairingInterface = ({ onPairSuccess }) => {
                                     setInputCode(val);
                                 }}
                                 placeholder="000 000"
-                                className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-4 text-center text-3xl font-mono tracking-widest text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-5 text-center text-3xl font-mono tracking-[0.2em] text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-inner"
                                 autoFocus
                             />
-                            <p className="text-slate-400 text-xs">Enter the 6-digit code from the other device</p>
                         </div>
 
                         <button
                             type="submit"
                             disabled={inputCode.length !== 6 || isLoading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 active:scale-[0.98]"
                         >
                             {isLoading ? (
                                 <>
@@ -191,6 +204,10 @@ const PairingInterface = ({ onPairSuccess }) => {
                     </form>
                 )}
             </div>
+
+            <p className="text-center text-slate-500 text-xs font-medium">
+                Connection is end-to-end encrypted
+            </p>
         </div>
     );
 };

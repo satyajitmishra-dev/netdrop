@@ -18,14 +18,11 @@ const Navigation = ({
     return (
         <>
             {/* Desktop Navigation - Single Row: Logo | Space | Nav Items | Info | Profile */}
-            <nav className="hidden md:flex absolute top-0 w-full px-4 lg:px-6 py-4 items-center z-50">
-                {/* Logo */}
-                <div className="flex items-center gap-2 lg:gap-3">
-                    <div className="relative w-9 h-9">
-                        <div className="absolute inset-0 bg-blue-500 rounded-xl rotate-6 opacity-20" />
-                        <div className="absolute inset-0 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <Zap className="w-5 h-5 text-white" />
-                        </div>
+            <nav className="hidden md:flex fixed top-0 w-full px-4 lg:px-6 py-4 items-center z-50 pointer-events-none">
+                <div className="flex items-center gap-2 lg:gap-3 pointer-events-auto">
+                    {/* Logo content */}
+                    <div className="relative w-9 h-9 flex items-center justify-center">
+                        <img src="/logo.png" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
                     </div>
                     <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight">NetDrop</h1>
                 </div>
@@ -34,12 +31,12 @@ const Navigation = ({
                 <div className="flex-1" />
 
                 {/* Nav Items - Inline */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 pointer-events-auto">
                     {navItems.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
-                            className={`h-9 px-3 lg:px-4 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2
+                            className={`h-11 px-4 lg:px-5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2
                                 ${activeTab === tab.id
                                     ? 'text-white bg-blue-600 shadow-lg shadow-blue-500/20'
                                     : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
@@ -51,76 +48,75 @@ const Navigation = ({
                 </div>
 
                 {/* Info Button */}
-                <button
-                    className="ml-3 lg:ml-4 h-9 w-9 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all"
-                    title="About"
-                >
-                    <Info size={16} />
-                </button>
-
-                {/* Profile */}
-                {isAuthenticated ? (
-                    <div className="ml-2 lg:ml-3 h-9 flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg px-2 transition-all">
-                        <img src={user?.photoURL} alt="User" className="w-6 h-6 rounded-full border border-blue-500/30" />
-                        <button
-                            onClick={onLogout}
-                            className="hidden lg:flex text-xs font-semibold text-slate-300 hover:text-red-400 transition-colors items-center gap-1 pr-1"
-                        >
-                            Logout
-                            <LogOut size={12} />
-                        </button>
-                    </div>
-                ) : (
+                <div className="flex items-center ml-3 lg:ml-4 pointer-events-auto">
                     <button
-                        onClick={() => onTabChange('vault')}
-                        className="ml-2 lg:ml-3 h-9 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-slate-400 hover:text-white transition-all flex items-center gap-1.5 text-sm font-semibold"
-                        title="Sign In"
+                        className="h-11 w-11 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95"
+                        title="About"
                     >
-                        <UserIcon size={16} />
-                        <span className="hidden lg:inline">Login</span>
+                        <Info size={20} />
                     </button>
-                )}
+
+                    {/* Profile */}
+                    {isAuthenticated ? (
+                        <div className="ml-2 lg:ml-3 h-11 flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl px-2 transition-all">
+                            <img src={user?.photoURL} alt="User" className="w-8 h-8 rounded-full border border-blue-500/30" />
+                            <button
+                                onClick={onLogout}
+                                className="hidden lg:flex text-xs font-semibold text-slate-300 hover:text-red-400 transition-colors items-center gap-1 pr-1"
+                            >
+                                Logout
+                                <LogOut size={14} />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => onTabChange('vault')}
+                            className="ml-2 lg:ml-3 h-11 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-400 hover:text-white transition-all flex items-center gap-2 text-sm font-semibold"
+                            title="Sign In"
+                        >
+                            <UserIcon size={20} />
+                            <span className="hidden lg:inline">Login</span>
+                        </button>
+                    )}
+                </div>
             </nav>
 
             {/* Mobile - Top Bar with Logo & Actions */}
-            <nav className="md:hidden absolute top-0 w-full p-3 flex justify-between items-center z-50">
+            <nav className="md:hidden fixed top-0 w-full p-3 flex justify-between items-center z-50 bg-gradient-to-b from-slate-950/80 to-transparent pointer-events-auto">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
-                    <div className="relative w-8 h-8">
-                        <div className="absolute inset-0 bg-blue-500 rounded-lg rotate-6 opacity-20" />
-                        <div className="absolute inset-0 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <Zap className="w-4 h-4 text-white" />
-                        </div>
+                    <div className="relative w-8 h-8 flex items-center justify-center">
+                        <img src="/logo.png" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
                     </div>
                     <h1 className="text-base font-bold text-white tracking-tight">NetDrop</h1>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <button
-                        className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center text-slate-400"
+                        className="w-11 h-11 rounded-full bg-slate-800/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
                         title="About"
                     >
-                        <Info size={16} />
+                        <Info size={22} />
                     </button>
                     {isAuthenticated ? (
-                        <button onClick={onLogout}>
-                            <img src={user?.photoURL} alt="User" className="w-8 h-8 rounded-full border border-blue-500/30" />
+                        <button onClick={onLogout} className="active:scale-95 transition-transform">
+                            <img src={user?.photoURL} alt="User" className="w-11 h-11 rounded-full border border-blue-500/30" />
                         </button>
                     ) : (
                         <button
                             onClick={() => onTabChange('vault')}
-                            className="w-8 h-8 rounded-full bg-white/5 border border-white/5 flex items-center justify-center text-slate-400"
+                            className="w-11 h-11 rounded-full bg-slate-800/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
                             title="Sign In"
                         >
-                            <UserIcon size={16} />
+                            <UserIcon size={22} />
                         </button>
                     )}
                 </div>
             </nav>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden absolute bottom-0 w-full z-50 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 pb-6 pt-2 px-2">
+            <nav className="md:hidden fixed bottom-0 w-full z-50 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 pb-6 pt-2 px-2 safe-bottom">
                 <div className="flex justify-around items-center">
                     {navItems.map((tab) => (
                         <button

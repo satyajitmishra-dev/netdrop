@@ -71,8 +71,9 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
 
                 {/* Device Icon */}
                 <div className="relative group cursor-pointer mb-2" onClick={onEditName}>
-                    <div className="w-20 h-20 rounded-full bg-slate-900/90 backdrop-blur-xl flex items-center justify-center text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.2)] ring-1 ring-white/10 transition-transform group-hover:scale-105 group-hover:bg-slate-800">
-                        <Monitor size={40} strokeWidth={1.2} />
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-900/90 backdrop-blur-xl flex items-center justify-center text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.2)] ring-1 ring-white/10 transition-transform group-hover:scale-105 group-hover:bg-slate-800">
+                        <Monitor size={32} className="md:hidden" strokeWidth={1.2} />
+                        <Monitor size={40} className="hidden md:block" strokeWidth={1.2} />
                     </div>
                     {/* Status Dot */}
                     <div className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-950 z-10 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
@@ -214,11 +215,11 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                     </motion.div>
                                 )}
                                 {/* Peer Icon */}
-                                <div className={`relative w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300
+                                <div className={`relative w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300
                                     ${peer.type === 'mobile' ? 'bg-indigo-600/40 text-indigo-200 ring-1 ring-indigo-400/60 hover:bg-indigo-500/60' : 'bg-blue-600/40 text-blue-200 ring-1 ring-blue-400/60 hover:bg-blue-500/60'}
                                     backdrop-blur-md group-hover:scale-110 group-hover:ring-2 group-hover:shadow-xl`}
                                 >
-                                    {React.cloneElement(getDeviceIcon(peer.type), { size: 26 })}
+                                    {React.cloneElement(getDeviceIcon(peer.type), { size: window.innerWidth < 768 ? 22 : 26 })}
                                 </div>
 
                                 {/* Peer Name - Visible */}

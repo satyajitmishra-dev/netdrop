@@ -71,6 +71,99 @@ export class SignalingService {
                 socket.emit("active-peers", peersInRoom);
             });
 
+            // --- Room Management (Advanced) ---
+            socket.on('create-room', ({ roomName }, callback) => {
+                // Generate simple 6-char passcode
+                const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                let passcode = "";
+                for (let i = 0; i < 6; i++) {
+                    passcode += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+
+                // Store room metadata
+                this.activeRooms = this.activeRooms || new Map();
+                this.activeRooms.set(passcode, {
+                    passcode,
+                    name: roomName,
+                    owner: socket.id,
+                    created: Date.now()
+                });
+
+                console.log(`[Rooms] Created room '${roomName}' with passcode ${passcode}`);
+
+                // Switch to new room (inline to update closure)
+                const newRoom = `room:${roomName}`;
+                socket.leave(room);
+                socket.to(room).emit("peer-left", { id: socket.id });
+                socket.join(newRoom);
+                room = newRoom; // Update closure!
+
+                const currentUser = this.connectedUsers.get(socket.id);
+                if (currentUser) {
+                    this.connectedUsers.set(socket.id, { ...currentUser, room: newRoom });
+                }
+
+                if (callback) callback({ success: true, roomName, passcode });
+            });
+
+            socket.on('join-room-by-code', ({ passcode }, callback) => {
+                this.activeRooms = this.activeRooms || new Map();
+
+                console.log(`[Rooms] Join attempt with passcode: "${passcode}"`);
+                console.log(`[Rooms] Available rooms:`, Array.from(this.activeRooms.keys()));
+
+                const roomData = this.activeRooms.get(passcode);
+
+                if (!roomData) {
+                    console.log(`[Rooms] Room not found for passcode: "${passcode}"`);
+                    if (callback) callback({ success: false, error: "Invalid Room Code" });
+                    return;
+                }
+
+                console.log(`[Rooms] Found room: ${roomData.name}`);
+
+                // Switch to room (inline to update closure)
+                const newRoom = `room:${roomData.name}`;
+                socket.leave(room);
+                socket.to(room).emit("peer-left", { id: socket.id });
+                socket.join(newRoom);
+                room = newRoom; // Update closure!
+
+                const currentUser = this.connectedUsers.get(socket.id);
+                if (currentUser) {
+                    this.connectedUsers.set(socket.id, { ...currentUser, room: newRoom });
+                    socket.to(newRoom).emit("peer-presence", { ...currentUser, room: newRoom });
+
+                    const peersInRoom = Array.from(this.connectedUsers.values()).filter(
+                        (peer) => peer.room === newRoom && peer.id !== socket.id
+                    );
+                    socket.emit("active-peers", peersInRoom);
+                }
+
+                if (callback) callback({ success: true, roomName: roomData.name });
+            });
+
+            socket.on('leave-room', () => {
+                const defaultRoom = `network:${clientIp}`;
+                if (room === defaultRoom) return;
+
+                socket.leave(room);
+                socket.to(room).emit("peer-left", { id: socket.id });
+                socket.join(defaultRoom);
+                room = defaultRoom; // Update closure!
+
+                const currentUser = this.connectedUsers.get(socket.id);
+                if (currentUser) {
+                    this.connectedUsers.set(socket.id, { ...currentUser, room: defaultRoom });
+                    socket.to(defaultRoom).emit("peer-presence", { ...currentUser, room: defaultRoom });
+
+                    const peersInRoom = Array.from(this.connectedUsers.values()).filter(
+                        (peer) => peer.room === defaultRoom && peer.id !== socket.id
+                    );
+                    socket.emit("active-peers", peersInRoom);
+                }
+            });
+
             // --- Pairing Logic ---
             socket.on('create-pair-code', () => {
                 console.log(`[Pairing] Received create-pair-code request from ${socket.id}`);

@@ -18,6 +18,7 @@ import SecureDownload from './pages/SecureDownload';
 import Login from './components/Auth/Login';
 import TextShareModal from './components/Transfer/TextShareModal';
 import Navigation from './components/Navigation/Navigation';
+import Footer from './components/Common/Footer';
 
 function App() {
   const dispatch = useDispatch();
@@ -203,7 +204,7 @@ function App() {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] flex flex-col items-center bg-slate-950 overflow-hidden text-slate-200 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen w-full flex flex-col items-center bg-slate-950 overflow-x-hidden text-slate-200 font-sans selection:bg-blue-500/30">
       <Toaster position="top-center" reverseOrder={false} toastOptions={{
         style: {
           background: '#0f172a',
@@ -223,9 +224,9 @@ function App() {
         onSend={handleSendText}
       />
 
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-900/10 rounded-full blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-800/5 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-900/10 rounded-full blur-[120px] animate-pulse-slow opacity-50 md:opacity-100" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-800/5 rounded-full blur-[120px] animate-pulse-slow delay-1000 opacity-50 md:opacity-100" />
       </div>
 
       <Navigation
@@ -236,10 +237,10 @@ function App() {
         onLogout={handleLogout}
       />
 
-      <main className="relative z-10 flex-1 w-full flex flex-col pt-20 md:pt-24 pb-20 md:pb-0 scrollbar-hide isolate transition-all duration-300">
+      <main className="relative z-10 flex-1 w-full flex flex-col pt-16 md:pt-20 pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
         {activeTab === 'local' ? (
-          <div className="w-full h-full flex items-center justify-center duration-500">
-            <div className="w-full h-full max-w-[1600px] mx-auto relative">
+          <div className="w-full h-full flex flex-col items-center justify-center duration-500">
+            <div className="w-full h-full max-w-[1600px] mx-auto relative px-4 flex items-center justify-center">
               <DiscoveryGrid
                 peers={peers}
                 onSelectPeer={handlePeerSelect}
@@ -258,33 +259,42 @@ function App() {
             </div>
           </div>
         ) : activeTab === 'remote' ? (
-          <div className="w-full flex-1 flex flex-col items-center justify-start pt-16 md:pt-10 p-4 duration-500 overflow-y-auto">
-            <PairingInterface
-              onPairSuccess={(peer) => {
-                setTimeout(() => dispatch(setActiveTab('local')), 1000);
-              }}
-            />
+          <div className="w-full h-full flex flex-col items-center justify-between duration-500">
+            <div className="w-full flex-1 flex items-center justify-center px-4">
+              <PairingInterface
+                onPairSuccess={(peer) => {
+                  setTimeout(() => dispatch(setActiveTab('local')), 1000);
+                }}
+              />
+            </div>
+            <Footer />
           </div>
         ) : activeTab === 'room' ? (
-          <div className="w-full flex-1 flex flex-col items-center justify-start pt-16 md:pt-10 duration-500 overflow-y-auto scrollbar-hide">
-            <RoomManager onPeerSelect={handlePeerSelect} />
+          <div className="w-full h-full flex flex-col items-center justify-between duration-500">
+            <div className="w-full flex-1 flex items-center justify-center px-4">
+              <RoomManager onPeerSelect={handlePeerSelect} />
+            </div>
+            <Footer />
           </div>
         ) : (
-          <div className="w-full flex-1 flex flex-col items-center pt-2 md:pt-6 px-4 pb-40 md:pb-10 duration-500 overflow-y-auto scrollbar-hide">
-            {isAuthenticated ? (
-              <div className="w-full max-w-lg space-y-6">
-                <div className="flex items-center gap-3 bg-slate-900/30 backdrop-blur-sm p-3 rounded-xl border border-slate-700/30">
-                  <img src={user?.photoURL} alt="Profile" className="w-9 h-9 rounded-full border border-blue-500/30" />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold text-sm truncate">{user?.displayName}</h3>
-                    <p className="text-slate-400 text-xs truncate">{user?.email}</p>
+          <div className="w-full h-full flex flex-col items-center justify-between px-4 duration-500">
+            <div className="w-full flex-1 flex flex-col items-center justify-center max-w-lg w-full space-y-6">
+              {isAuthenticated ? (
+                <>
+                  <div className="w-full flex items-center gap-3 bg-slate-900/30 backdrop-blur-sm p-3 rounded-xl border border-slate-700/30">
+                    <img src={user?.photoURL} alt="Profile" className="w-9 h-9 rounded-full border border-blue-500/30" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-semibold text-sm truncate">{user?.displayName}</h3>
+                      <p className="text-slate-400 text-xs truncate">{user?.email}</p>
+                    </div>
                   </div>
-                </div>
-                <RemoteUpload />
-              </div>
-            ) : (
-              <Login />
-            )}
+                  <RemoteUpload />
+                </>
+              ) : (
+                <Login />
+              )}
+            </div>
+            <Footer />
           </div>
         )}
       </main>

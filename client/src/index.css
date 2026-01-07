@@ -3,28 +3,44 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
     font-family: 'Outfit', sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased overflow-hidden selection:bg-blue-500/30;
+    @apply bg-slate-950 text-slate-100 antialiased overflow-x-hidden selection:bg-blue-500/30 text-sm md:text-base;
     /* Deep Space Premium Gradient */
-    background: 
+    background:
       radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.08) 0%, transparent 25%),
       radial-gradient(circle at 85% 30%, rgba(16, 185, 94, 0.08) 0%, transparent 25%),
       linear-gradient(to bottom, #020617, #0f172a);
     background-attachment: fixed;
   }
+
+  .safe-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
 }
 
 @layer components {
+
   /* Premium Button Styles */
   .btn-primary {
     @apply px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/25 transition-all duration-300 active:scale-95 flex items-center gap-2 justify-center;
   }
-  
+
   .btn-glass {
     @apply px-5 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-medium backdrop-blur-md transition-all duration-300 active:scale-95 flex items-center gap-2 justify-center;
   }
@@ -33,7 +49,7 @@
   .glass-panel {
     @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl;
   }
-  
+
   .card-premium {
     @apply glass-panel rounded-3xl p-6 md:p-8;
   }
@@ -42,10 +58,32 @@
   .input-premium {
     @apply w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300;
   }
-  
+
   /* Animations */
   .animate-pulse-slow {
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Scrollbar Hide Utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Touch-Friendly Minimum Targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Horizontal Scroll with Fade Mask */
+  .mask-fade-right {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
   }
 }
 
@@ -54,13 +92,16 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
