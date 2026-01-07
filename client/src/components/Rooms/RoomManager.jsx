@@ -16,6 +16,7 @@ const RoomManager = ({ onPeerSelect }) => {
     const [roomName, setRoomName] = useState('');
     const [passcode, setPasscode] = useState(''); // Input for join, Display for create
     const [activeRoomInfo, setActiveRoomInfo] = useState(null); // { name, passcode }
+    const [isBusy, setIsBusy] = useState(false); // Loading state for async actions
 
     // Broadcast Text State
     const [textModalOpen, setTextModalOpen] = useState(false);
@@ -48,7 +49,21 @@ const RoomManager = ({ onPeerSelect }) => {
         const name = roomName.trim();
         if (!name) return;
 
+        const socket = socketService.getSocket();
+        if (!socket.connected) {
+            toast.error("Waiting for connection...", { id: 'room-conn' });
+            // proceed anyway, socket.io buffers
+        }
+
+        setIsBusy(true);
+        const safetyTimer = setTimeout(() => {
+            setIsBusy(false);
+            toast.error("Request timed out. Please try again.");
+        }, 8000);
+
         socketService.createRoom(name, (response) => {
+            clearTimeout(safetyTimer);
+            setIsBusy(false);
             if (response.success) {
                 setActiveRoomInfo({ name: response.roomName, passcode: response.passcode });
                 setMode('active');
@@ -64,7 +79,20 @@ const RoomManager = ({ onPeerSelect }) => {
         const code = passcode.trim();
         if (!code) return;
 
+        const socket = socketService.getSocket();
+        if (!socket.connected) {
+            toast.error("Waiting for connection...", { id: 'room-conn' });
+        }
+
+        setIsBusy(true);
+        const safetyTimer = setTimeout(() => {
+            setIsBusy(false);
+            toast.error("Request timed out. Please try again.");
+        }, 8000);
+
         socketService.joinRoomByCode(code, (response) => {
+            clearTimeout(safetyTimer);
+            setIsBusy(false);
             if (response.success) {
                 setActiveRoomInfo({ name: response.roomName, passcode: code }); // We might not know passcode if we joined without logic check, but here we do
                 setMode('active');
@@ -207,10 +235,10 @@ const RoomManager = ({ onPeerSelect }) => {
                     </div>
                     <button
                         onClick={handleCreateRoom}
-                        disabled={!roomName.trim()}
+                        disabled={!roomName.trim() || isBusy}
                         className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2"
                     >
-                        Generate Room <ArrowRight size={18} />
+                        {isBusy ? "Creating..." : <>Generate Room <ArrowRight size={18} /></>}
                     </button>
                 </div>
             </div>
@@ -239,10 +267,10 @@ const RoomManager = ({ onPeerSelect }) => {
                     </div>
                     <button
                         onClick={handleJoinRoom}
-                        disabled={passcode.length < 6}
+                        disabled={passcode.length < 6 || isBusy}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2"
                     >
-                        Enter Room <ArrowRight size={18} />
+                        {isBusy ? "Joining..." : <>Enter Room <ArrowRight size={18} /></>}
                     </button>
                 </div>
             </div>

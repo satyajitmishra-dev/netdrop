@@ -46,6 +46,33 @@ class WebRTCService {
 
     // Initiator: Start connection
     async connectToPeer(targetPeerId, payload = null) {
+        // 1. Reuse existing connection if valid
+        if (this.peerConnection &&
+            this.targetPeerId === targetPeerId &&
+            this.peerConnection.connectionState === 'connected' &&
+            this.dataChannel &&
+            this.dataChannel.readyState === 'open') {
+
+            console.log("Reusing existing WebRTC connection to", targetPeerId);
+            if (payload) {
+                if (payload instanceof File) {
+                    this.sendFile(payload);
+                } else {
+                    // Wrap non-file payload in same structure if needed, or just send
+                    // logic below assumes pendingPayload sends appropriately.
+                    this.sendData(JSON.stringify(payload));
+                }
+            }
+            return;
+        }
+
+        // 2. Clean up old connection if switching peers or restarting
+        if (this.peerConnection) {
+            console.warn("Closing old connection to start new one");
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+
         this.targetPeerId = targetPeerId;
         this.pendingPayload = payload;
 
@@ -68,6 +95,12 @@ class WebRTCService {
 
     // Receiver: Handle incoming offer
     async handleOffer(senderId, offer) {
+        // If we have an existing connection, close it to accept new one
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+
         this.targetPeerId = senderId;
         this.createPeerConnection();
 
@@ -130,6 +163,11 @@ class WebRTCService {
                 }
                 this.pendingPayload = null;
             }
+        };
+
+        channel.onclose = () => {
+            console.log("Data Channel CLOSED");
+            this.incomingFile = { buffer: [], meta: null, receivedSize: 0, startTime: 0 };
         };
 
         channel.onmessage = (event) => {

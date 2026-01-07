@@ -65,19 +65,29 @@ const PairingInterface = ({ onPairSuccess }) => {
     }, [onPairSuccess]);
 
     const handleGenerateCode = () => {
+        const socket = socketService.getSocket();
+
+        if (!socket.connected) {
+            // If not connected, we still try nicely but warn
+            console.warn("[Pairing] Socket not connected yet. Waiting for pending.");
+        }
+
         setIsLoading(true);
         setCode('');
 
-        // Safety timeout
+        // Safety timeout - Fix: Don't check state, just forcefully clear if timeout hits
         const safetyTimer = setTimeout(() => {
-            if (isLoading) {
-                setIsLoading(false);
-                toast.error("Network timeout. Please try again.");
-            }
-        }, 5000);
+            console.warn("[Pairing] Code generation timed out");
+            setIsLoading(false);
+            toast.error("Network timeout. Please refresh.", {
+                id: 'pair-timeout',
+                style: { background: '#1e293b', color: '#fff', border: '1px solid #ef4444' }
+            });
+        }, 8000); // Increased to 8s for slower networks
 
         socketService.createPairCode((newCode) => {
             clearTimeout(safetyTimer);
+            console.log("[Pairing] Received New Code:", newCode);
             setCode(newCode);
             setIsLoading(false);
             setExpiryTime(Date.now() + 5 * 60 * 1000);

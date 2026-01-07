@@ -40,35 +40,37 @@ class SocketService {
         return this.socket;
     }
     createPairCode(callback) {
-        if (!this.socket) {
-            console.error('Socket not initialized in createPairCode');
-            return;
-        }
+        const socket = this.getSocket();
+        if (!socket) return;
+
         console.log('Emitting create-pair-code');
-        this.socket.emit('create-pair-code');
-        this.socket.once('pair-code-created', (code) => {
+        socket.emit('create-pair-code');
+        socket.once('pair-code-created', (code) => {
             console.log('Received pair-code-created:', code);
             callback(code);
         });
     }
 
     joinWithCode(code) {
-        if (!this.socket) return;
-        this.socket.emit('join-with-code', code);
+        const socket = this.getSocket();
+        if (!socket) return;
+        socket.emit('join-with-code', code);
     }
 
     createRoom(roomName, callback) {
-        if (!this.socket) return;
-        this.socket.emit('create-room', { roomName }, callback);
+        const socket = this.getSocket();
+        if (!socket) return;
+        socket.emit('create-room', { roomName }, callback);
     }
 
     joinRoomByCode(passcode, callback) {
-        if (!this.socket) return;
-        this.socket.emit('join-room-by-code', { passcode }, callback);
+        const socket = this.getSocket();
+        if (!socket) return;
+        socket.emit('join-room-by-code', { passcode }, callback);
     }
 
     leaveRoom() {
-        if (!this.socket) return;
+        if (!this.socket) return; // Leaving doesn't need to create new connection if none exists
         this.socket.emit('leave-room');
     }
 

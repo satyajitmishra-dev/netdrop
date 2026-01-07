@@ -1,8 +1,22 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Monitor, Laptop, Tablet, Zap } from 'lucide-react';
+import { socketService } from '../../services/socket.service';
 
 const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, isEditingName, onEditName, onNameChange }) => {
+    const mySocketId = socketService.socket?.id;
+
+    // Filter self from peers list using ID for safety, fallback to name
+    const [filteredPeers, setFilteredPeers] = React.useState([]);
+
+    React.useEffect(() => {
+        // Use ID filtering if available, otherwise name (legacy)
+        const filtered = peers.filter(p => {
+            if (mySocketId) return p.id !== mySocketId;
+            return p.name !== myDeviceName;
+        });
+        setFilteredPeers(filtered);
+    }, [peers, mySocketId, myDeviceName]);
 
     const [loadingDots, setLoadingDots] = React.useState('');
     const [tooltipPeerId, setTooltipPeerId] = React.useState(null);
@@ -32,9 +46,6 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
         if (type === 'tablet') return <Tablet size={32} strokeWidth={1.5} />;
         return <Laptop size={32} strokeWidth={1.5} />;
     };
-
-    // Filter self from peers list
-    const filteredPeers = peers.filter(p => p.name !== myDeviceName);
 
     return (
         <div className="relative w-full h-full min-h-[500px] flex justify-center overflow-hidden">
