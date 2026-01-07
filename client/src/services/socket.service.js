@@ -44,11 +44,11 @@ class SocketService {
         if (!socket) return;
 
         console.log('Emitting create-pair-code');
-        socket.emit('create-pair-code');
         socket.once('pair-code-created', (code) => {
             console.log('Received pair-code-created:', code);
             callback(code);
         });
+        socket.emit('create-pair-code');
     }
 
     joinWithCode(code) {

@@ -13,14 +13,12 @@ export class SignalingService {
             let clientIp = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
 
             // Normalize IPv6 mapped IPv4
-            if (clientIp.startsWith('::ffff:')) {
+            if (clientIp && clientIp.startsWith('::ffff:')) {
                 clientIp = clientIp.substring(7);
             }
 
             let room = `network:${clientIp}`; // Default to IP-based room
             socket.join(room);
-
-            console.log(`[Signaling] User connected: ${socket.id} | IP: ${clientIp} | Room: ${room}`);
 
             console.log(`[Signaling] User connected: ${socket.id} | IP: ${clientIp} | Room: ${room}`);
 
