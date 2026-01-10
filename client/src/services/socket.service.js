@@ -10,6 +10,7 @@ class SocketService {
     connect() {
         if (this.socket) return this.socket;
 
+        console.log("🔌 Attempting to connect to Socket URL:", SOCKET_URL);
         this.socket = io(SOCKET_URL, {
             withCredentials: true,
             transports: ["websocket", "polling"],

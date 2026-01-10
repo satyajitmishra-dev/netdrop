@@ -15,10 +15,12 @@ const PairingInterface = ({ onPairSuccess }) => {
 
     // Initial Code Generation for Receive Mode
     useEffect(() => {
-        if (mode === 'receive' && !code) {
+        const socket = socketService.getSocket();
+        // Only generate if: mode is receive, no code exists, not currently loading, and socket is connected
+        if (mode === 'receive' && !code && !isLoading && socket?.connected) {
             handleGenerateCode();
         }
-    }, [mode]);
+    }, [mode, code, isLoading]);
 
     // Code Shuffle Animation
     useEffect(() => {
@@ -40,7 +42,7 @@ const PairingInterface = ({ onPairSuccess }) => {
         }
     }, [code, mode]);
 
-    // Socket Listeners for Feedback
+    // Socket Listeners for Feedback & Connection Status
     useEffect(() => {
         const socket = socketService.getSocket();
 
@@ -55,14 +57,24 @@ const PairingInterface = ({ onPairSuccess }) => {
             if (onPairSuccess) onPairSuccess(peer);
         };
 
+        const onConnect = () => {
+            // Auto-generate code if we are in receive mode and waiting
+            if (mode === 'receive' && !code && !isLoading) {
+                console.log("[Pairing] Socket connected, generating code...");
+                handleGenerateCode();
+            }
+        };
+
         socket.on('pair-error', onPairError);
         socket.on('pair-success', onPairSuccessEvent);
+        socket.on('connect', onConnect);
 
         return () => {
             socket.off('pair-error', onPairError);
             socket.off('pair-success', onPairSuccessEvent);
+            socket.off('connect', onConnect);
         };
-    }, [onPairSuccess]);
+    }, [onPairSuccess, mode, code, isLoading]);
 
     const handleGenerateCode = () => {
         const socket = socketService.getSocket();
