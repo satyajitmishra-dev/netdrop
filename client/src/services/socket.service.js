@@ -41,13 +41,24 @@ class SocketService {
     }
     createPairCode(callback) {
         const socket = this.getSocket();
-        if (!socket) return;
+
+        if (!socket || !socket.connected) {
+            console.error("❌ Cannot generate code: Socket not connected");
+            // Attempt to reconnect
+            if (socket) socket.connect();
+            return;
+        }
 
         console.log('Emitting create-pair-code');
+
+        // Remove any existing listeners to prevent duplicates
+        socket.off('pair-code-created');
+
         socket.once('pair-code-created', (code) => {
             console.log('Received pair-code-created:', code);
             callback(code);
         });
+
         socket.emit('create-pair-code');
     }
 

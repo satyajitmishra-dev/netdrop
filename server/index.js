@@ -60,7 +60,7 @@ app.get("/health", (req, res) => {
 });
 
 // SPA Fallback (Serve index.html for non-API routes)
-app.get("*", (req, res) => {
+app.get(/(.*)/, (req, res) => {
     res.sendFile(path.join(__dirname, "../client/dist/index.html"));
 });
 

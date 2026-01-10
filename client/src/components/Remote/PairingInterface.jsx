@@ -68,8 +68,17 @@ const PairingInterface = ({ onPairSuccess }) => {
         const socket = socketService.getSocket();
 
         if (!socket.connected) {
-            // If not connected, we still try nicely but warn
-            console.warn("[Pairing] Socket not connected yet. Waiting for pending.");
+            console.warn("[Pairing] Socket not connected. Attempting reconnect...");
+            toast.error("Connecting to server...", { id: 'conn-status' });
+            socket.connect();
+
+            // Wait briefly for connection
+            setTimeout(() => {
+                if (!socket.connected) {
+                    toast.error("Server unavailable. Check connection.");
+                }
+            }, 2000);
+            // Decide whether to proceed or wait. Usually better to wait/retry.
         }
 
         setIsLoading(true);

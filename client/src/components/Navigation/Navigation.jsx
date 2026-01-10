@@ -22,7 +22,7 @@ const Navigation = ({
                 <div className="flex items-center gap-2 lg:gap-3 pointer-events-auto">
                     {/* Logo content */}
                     <div className="relative w-9 h-9 flex items-center justify-center">
-                        <img src="/logo.png" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
+                        <img src="/logo.svg" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
                     </div>
                     <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight">NetDrop</h1>
                 </div>
@@ -86,7 +86,7 @@ const Navigation = ({
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8 flex items-center justify-center">
-                        <img src="/logo.png" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
+                        <img src="/logo.svg" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
                     </div>
                     <h1 className="text-base font-bold text-white tracking-tight">NetDrop</h1>
                 </div>
