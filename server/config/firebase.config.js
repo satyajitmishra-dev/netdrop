@@ -26,7 +26,6 @@ if (serviceAccount) {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
     });
-    console.log("🔥 Firebase Admin Initialized");
 } else {
     console.warn("⚠️ Firebase Admin NOT initialized. Missing credentials in .env");
 }

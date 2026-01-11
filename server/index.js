@@ -52,7 +52,9 @@ const io = new Server(server, {
 new SignalingService(io);
 
 import fileRoutes from "./routes/file.routes.js";
+import feedbackRoutes from "./routes/feedback.routes.js";
 app.use("/api/files", fileRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 // Health Check
 app.get("/health", (req, res) => {

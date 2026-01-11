@@ -68,7 +68,6 @@ const PairingInterface = ({ onPairSuccess }) => {
         const onConnect = () => {
             // Auto-generate code if we are in receive mode and waiting
             if (mode === 'receive' && !code && !isLoading) {
-                console.log("[Pairing] Socket connected, generating code...");
                 handleGenerateCode();
             }
         };
@@ -117,7 +116,6 @@ const PairingInterface = ({ onPairSuccess }) => {
 
         socketService.createPairCode((newCode) => {
             clearTimeout(safetyTimer);
-            console.log("[Pairing] Received New Code:", newCode);
             setCode(newCode);
             setIsLoading(false);
             setExpiryTime(Date.now() + 5 * 60 * 1000);

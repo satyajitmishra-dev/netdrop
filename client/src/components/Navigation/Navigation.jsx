@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Zap, Link, Users, Lock, Info, LogOut, User as UserIcon } from 'lucide-react';
 import SocketStatus from './SocketStatus';
+import AboutModal from '../UI/AboutModal';
 
 const Navigation = ({
     activeTab,
@@ -9,6 +10,7 @@ const Navigation = ({
     user,
     onLogout
 }) => {
+    const [showAbout, setShowAbout] = useState(false);
     const navItems = [
         { id: 'local', icon: Zap, label: 'Local' },
         { id: 'remote', icon: Link, label: 'Remote' },
@@ -54,6 +56,7 @@ const Navigation = ({
                 {/* Info Button */}
                 <div className="flex items-center ml-3 lg:ml-4 pointer-events-auto">
                     <button
+                        onClick={() => setShowAbout(true)}
                         className="h-11 w-11 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95"
                         title="About"
                     >
@@ -99,6 +102,7 @@ const Navigation = ({
                 <div className="flex items-center gap-3">
                     <SocketStatus />
                     <button
+                        onClick={() => setShowAbout(true)}
                         className="w-11 h-11 rounded-full bg-slate-800/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
                         title="About"
                     >
@@ -136,6 +140,9 @@ const Navigation = ({
                     ))}
                 </div>
             </nav>
+
+            {/* About Modal */}
+            <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
         </>
     );
 };

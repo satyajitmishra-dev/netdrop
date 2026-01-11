@@ -1,14 +1,19 @@
 import React from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Package } from 'lucide-react';
 
-const UploadSuccess = ({ shareLink, passcode, onCopy, onReset }) => {
+const UploadSuccess = ({ shareLink, passcode, onCopy, onReset, fileCount = 1 }) => {
     return (
         <div className="space-y-4">
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
                 <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Check className="w-5 h-5 text-emerald-500" />
+                    {fileCount > 1 ? <Package className="w-5 h-5 text-emerald-500" /> : <Check className="w-5 h-5 text-emerald-500" />}
                 </div>
-                <h3 className="text-lg font-bold text-white">Upload Complete</h3>
+                <h3 className="text-lg font-bold text-white">
+                    {fileCount > 1 ? `${fileCount} Files Bundled` : 'Upload Complete'}
+                </h3>
+                {fileCount > 1 && (
+                    <p className="text-xs text-emerald-400/70 mt-1">All files in a single encrypted ZIP</p>
+                )}
             </div>
 
             <div className="bg-slate-900/50 rounded-xl p-4 space-y-3 border border-slate-700/30">

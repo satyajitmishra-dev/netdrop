@@ -26,11 +26,9 @@ export const useRealtimePresence = (deviceInfo) => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 discoveryService.leave();
-                console.log("🙈 App backgrounded - Hidden from discovery");
             } else {
                 if (socket.connected) {
                     discoveryService.init(deviceInfo);
-                    console.log("👀 App active - Announced presence");
                 }
             }
         };

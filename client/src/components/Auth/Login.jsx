@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../config/firebase.config';
 import { setUser, setLoading } from '../../store/slices/auth.slice';
-import { LogIn, Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { LogIn, Loader2, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login = () => {

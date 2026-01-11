@@ -16,11 +16,11 @@ class SocketService {
         });
 
         this.socket.on("connect", () => {
-            console.log("✅ Connected to signaling server:", this.socket.id);
+            // Connection established
         });
 
-        this.socket.on("connect_error", (err) => {
-            console.error("❌ Socket connection error:", err);
+        this.socket.on("connect_error", () => {
+            // Connection error handled silently
         });
 
         return this.socket;
@@ -43,19 +43,16 @@ class SocketService {
         const socket = this.getSocket();
 
         if (!socket || !socket.connected) {
-            console.error("❌ Cannot generate code: Socket not connected");
-            // Attempt to reconnect
             if (socket) socket.connect();
             return;
         }
 
-        console.log('Emitting create-pair-code');
+
 
         // Remove any existing listeners to prevent duplicates
         socket.off('pair-code-created');
 
         socket.once('pair-code-created', (code) => {
-            console.log('Received pair-code-created:', code);
             callback(code);
         });
 

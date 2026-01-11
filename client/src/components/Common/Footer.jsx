@@ -1,9 +1,10 @@
 import React from 'react';
 import { EyeOff, ShieldCheck } from 'lucide-react';
+import { useAppVersion } from '../../hooks/useAppVersion';
 
 const Footer = () => {
     const year = new Date().getFullYear();
-    const version = 'v2.2.4';
+    const { version } = useAppVersion();
 
     return (
         <footer className="w-full py-6 mt-auto relative z-10 flex flex-col items-center justify-center">

@@ -20,16 +20,12 @@ export class SignalingService {
             let room = `network:${clientIp}`; // Default to IP-based room
             socket.join(room);
 
-            console.log(`[Signaling] User connected: ${socket.id} | IP: ${clientIp} | Room: ${room}`);
-
             // --- Room Management ---
             socket.on('join-room', ({ roomName }) => {
                 const oldRoom = room;
                 const newRoom = roomName ? `room:${roomName}` : `network:${clientIp}`; // If empty, back to local
 
                 if (oldRoom === newRoom) return;
-
-                console.log(`[Rooms] ${socket.id} switching from ${oldRoom} to ${newRoom}`);
 
                 // 1. Leave old room
                 socket.leave(oldRoom);
@@ -98,8 +94,6 @@ export class SignalingService {
                     created: Date.now()
                 });
 
-                console.log(`[Rooms] Created room '${roomName}' with passcode ${passcode}`);
-
                 // Switch to new room (inline to update closure)
                 const newRoom = `room:${roomName}`;
                 socket.leave(room);
@@ -118,18 +112,12 @@ export class SignalingService {
             socket.on('join-room-by-code', ({ passcode }, callback) => {
                 this.activeRooms = this.activeRooms || new Map();
 
-                console.log(`[Rooms] Join attempt with passcode: "${passcode}"`);
-                console.log(`[Rooms] Available rooms:`, Array.from(this.activeRooms.keys()));
-
                 const roomData = this.activeRooms.get(passcode);
 
                 if (!roomData) {
-                    console.log(`[Rooms] Room not found for passcode: "${passcode}"`);
                     if (callback) callback({ success: false, error: "Invalid Room Code" });
                     return;
                 }
-
-                console.log(`[Rooms] Found room: ${roomData.name}`);
 
                 // Switch to room (inline to update closure)
                 const newRoom = `room:${roomData.name}`;
@@ -175,14 +163,12 @@ export class SignalingService {
 
             // --- Pairing Logic ---
             socket.on('create-pair-code', () => {
-                console.log(`[Pairing] Received create-pair-code request from ${socket.id}`);
                 // Generate 6-digit code
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 // Store code mapping (In-memory for MVP)
                 this.pairingCodes = this.pairingCodes || new Map();
                 this.pairingCodes.set(code, socket.id);
 
-                console.log(`[Pairing] Generated code ${code} for ${socket.id}`);
                 socket.emit('pair-code-created', code);
 
                 // Auto-expire code after 5 mins
@@ -214,8 +200,6 @@ export class SignalingService {
                     // 2. Tell Current about Target
                     socket.emit('peer-presence', targetUser);
                     socket.emit('pair-success', { peer: targetUser });
-
-                    console.log(`[Pairing] Linked ${currentUser.name} and ${targetUser.name}`);
                 } else {
                     socket.emit('pair-error', 'Peer not found');
                 }
@@ -245,7 +229,6 @@ export class SignalingService {
             });
 
             socket.on("disconnect", () => {
-                console.log(`[Signaling] User disconnected: ${socket.id}`);
                 const user = this.connectedUsers.get(socket.id);
                 this.connectedUsers.delete(socket.id);
 

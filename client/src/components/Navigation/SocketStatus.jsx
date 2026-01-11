@@ -75,16 +75,20 @@ const SocketStatus = () => {
     const Icon = current.icon;
 
     if (status === 'connected') {
-        // Minimal dot for connected state
+        // Minimal dot with visible latency
         return (
-            <div className="group relative flex items-center h-8 px-2 rounded-full hover:bg-white/5 transition-all cursor-help" title={`Connected • ${ping}ms latency`}>
+            <div className="group relative flex items-center gap-1.5 h-8 px-2 rounded-full hover:bg-white/5 transition-all cursor-help" title={`Connected to NetDrop Network`}>
                 <div className="relative flex items-center justify-center w-2.5 h-2.5">
                     <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${current.color}`}></span>
                     <span className={`relative inline-flex rounded-full h-2 w-2 ${current.color}`}></span>
                 </div>
+                {/* Always show latency */}
+                <span className="text-[10px] font-mono font-semibold text-emerald-400/80">
+                    {ping}ms
+                </span>
                 {/* Tooltip on hover */}
-                <span className="hidden group-hover:block absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900 text-xs text-slate-300 px-2 py-1 rounded border border-white/10 whitespace-nowrap z-50">
-                    NetDrop Network • {ping}ms
+                <span className="hidden group-hover:block absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900 text-xs text-slate-300 px-2 py-1 rounded border border-white/10 whitespace-nowrap z-50 shadow-lg">
+                    NetDrop Network • {ping}ms latency
                 </span>
             </div>
         );

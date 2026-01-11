@@ -5,6 +5,7 @@ import FileModel from "../models/file.model.js";
 export const initializeUpload = async (req, res) => {
     try {
         const { name, size, type, encrypted } = req.body;
+        const user = req.user; // From auth middleware
 
         // Enforce 50MB limit
         const MAX_SIZE = 50 * 1024 * 1024;
@@ -19,13 +20,15 @@ export const initializeUpload = async (req, res) => {
         // Get Presigned URL
         const uploadUrl = await getPresignedUploadUrl(key, "application/octet-stream");
 
-        // Save metadata to MongoDB
+        // Save metadata to MongoDB with owner info
         await FileModel.create({
             fileId,
             name,
             size,
             type,
-            encrypted: !!encrypted
+            encrypted: !!encrypted,
+            owner: user?.uid || null,
+            ownerEmail: user?.email || 'anonymous@netdrop.app'
         });
 
         res.status(200).json({
@@ -57,7 +60,8 @@ export const getDownloadLink = async (req, res) => {
         res.status(200).json({
             downloadUrl,
             fileName: fileDoc.name,
-            fileType: fileDoc.type
+            fileType: fileDoc.type,
+            ownerEmail: fileDoc.ownerEmail
         });
     } catch (error) {
         console.error("Download Link Error:", error);

@@ -28,6 +28,10 @@ const fileSchema = new mongoose.Schema({
         type: String, // Firebase UID (optional for now)
         default: null
     },
+    ownerEmail: {
+        type: String, // User's email who uploaded the file
+        required: true
+    },
     createdAt: {
         type: Date,
         default: Date.now,

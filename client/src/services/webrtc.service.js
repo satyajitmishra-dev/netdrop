@@ -30,12 +30,10 @@ class WebRTCService {
         const socket = socketService.getSocket();
 
         socket.on("signal-offer", async ({ senderId, offer }) => {
-            console.log("Received Offer from:", senderId);
             await this.handleOffer(senderId, offer);
         });
 
         socket.on("signal-answer", async ({ senderId, answer }) => {
-            console.log("Received Answer from:", senderId);
             await this.handleAnswer(answer);
         });
 
@@ -53,7 +51,7 @@ class WebRTCService {
             this.dataChannel &&
             this.dataChannel.readyState === 'open') {
 
-            console.log("Reusing existing WebRTC connection to", targetPeerId);
+            // Reusing existing WebRTC connection
             if (payload) {
                 if (payload instanceof File) {
                     this.sendFile(payload);
@@ -68,7 +66,6 @@ class WebRTCService {
 
         // 2. Clean up old connection if switching peers or restarting
         if (this.peerConnection) {
-            console.warn("Closing old connection to start new one");
             this.peerConnection.close();
             this.peerConnection = null;
         }
@@ -146,7 +143,7 @@ class WebRTCService {
         };
 
         this.peerConnection.onconnectionstatechange = () => {
-            console.log("WebRTC State:", this.peerConnection.connectionState);
+            // Connection state changed
         };
     }
 
@@ -154,7 +151,6 @@ class WebRTCService {
         channel.binaryType = 'arraybuffer'; // Crucial for file transfer
 
         channel.onopen = () => {
-            console.log("Data Channel OPEN");
             if (this.pendingPayload) {
                 if (this.pendingPayload instanceof File) {
                     this.sendFile(this.pendingPayload);
@@ -166,7 +162,6 @@ class WebRTCService {
         };
 
         channel.onclose = () => {
-            console.log("Data Channel CLOSED");
             this.incomingFile = { buffer: [], meta: null, receivedSize: 0, startTime: 0 };
         };
 
@@ -188,7 +183,6 @@ class WebRTCService {
                     this.incomingFile.buffer = [];
                     this.incomingFile.receivedSize = 0;
                     this.incomingFile.startTime = Date.now();
-                    console.log(`Receiving file: ${parsed.meta.name} (${parsed.meta.size} bytes)`);
                 }
                 else {
                     if (this.onDataReceived) {
@@ -196,7 +190,6 @@ class WebRTCService {
                     }
                 }
             } catch (e) {
-                console.warn("Received non-JSON text:", data);
                 if (this.onDataReceived) {
                     this.onDataReceived(data, this.targetPeerId);
                 }
@@ -208,7 +201,7 @@ class WebRTCService {
         if (this.dataChannel && this.dataChannel.readyState === "open") {
             this.dataChannel.send(data);
         } else {
-            console.error("Data Channel not open");
+            // Data Channel not open
         }
     }
 
@@ -238,7 +231,7 @@ class WebRTCService {
             this.sendData(chunk);
         }
 
-        console.log("File sent successfully");
+        // File sent successfully
         if (this.onSendProgress) {
             this.onSendProgress({ type: 'complete', file: file });
         }
@@ -267,7 +260,6 @@ class WebRTCService {
 
             // Reset
             this.incomingFile = { buffer: [], meta: null, receivedSize: 0, startTime: 0 };
-            console.log("File reception complete");
         }
     }
 }
