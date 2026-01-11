@@ -23,9 +23,25 @@ const server = http.createServer(app);
 // Trust Proxy (Required for Production behind Nginx/Load Balancers)
 app.set("trust proxy", 1);
 
+// Allowed Origins (supports both www and non-www)
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "https://netdrop.site",
+    "https://www.netdrop.site",
+    "http://localhost:5173"
+].filter(Boolean);
+
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, origin);
+        } else {
+            callback(new Error("CORS not allowed for origin: " + origin));
+        }
+    },
     credentials: true
 }));
 app.use(helmet({
@@ -42,7 +58,7 @@ app.use(express.static(path.join(__dirname, "../client/dist")));
 // Socket.io Setup
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true
     }
