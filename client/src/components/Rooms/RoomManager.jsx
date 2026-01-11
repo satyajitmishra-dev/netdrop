@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import { Users, LogOut, MessageSquare, FileText, ArrowRight, Shield, Plus, Key } from 'lucide-react';
+import { Users, LogOut, MessageSquare, FileText, ArrowRight, Shield, Plus, Key, Copy, Info, X } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
 import DiscoveryGrid from '../Transfer/DiscoveryGrid';
 import TextShareModal from '../Transfer/TextShareModal';
@@ -22,6 +22,8 @@ const RoomManager = ({ onPeerSelect }) => {
     const [textModalOpen, setTextModalOpen] = useState(false);
     const [selectedPeer, setSelectedPeer] = useState(null); // For per-peer text sharing
     const [textModalMode, setTextModalMode] = useState('broadcast'); // 'broadcast' | 'peer'
+    const [showTips, setShowTips] = useState(false); // Info popover state
+    const [showUsers, setShowUsers] = useState(false); // User list popover state
 
     // Listen for incoming broadcast text
     useEffect(() => {
@@ -279,73 +281,163 @@ const RoomManager = ({ onPeerSelect }) => {
 
     // Active Room View
     return (
-        <div className="w-full h-full flex flex-col pt-4">
-            {/* Room Header */}
-            <div className="w-full max-w-[1600px] mx-auto px-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4 bg-blue-500/10 px-6 py-3 rounded-2xl border border-blue-500/20 w-full md:w-auto">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
-                        <Users size={20} className="text-white" />
+        <div className="w-full h-full flex flex-col">
+            {/* Room Header - Centered premium design */}
+            <div className="w-full max-w-lg mx-auto px-4 py-4 text-center space-y-3">
+                {/* Room Info */}
+                <div className="inline-flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
+                        <Users size={22} className="text-blue-400" />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-xs text-blue-300 font-bold uppercase tracking-wider">Current Room</p>
-                        <div className="flex items-baseline gap-2">
-                            <h2 className="text-white font-bold text-lg leading-tight truncate">{activeRoomInfo?.name}</h2>
-                            <span className="text-slate-400 text-xs font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700 select-all" title="Share this code">
-                                {activeRoomInfo?.passcode}
-                            </span>
-                        </div>
+                    <h2 className="text-lg font-bold text-white">{activeRoomInfo?.name}</h2>
+                </div>
+
+                {/* Room Code with Copy */}
+                <div className="flex items-center justify-center gap-3">
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText(activeRoomInfo?.passcode);
+                            toast.success('Room code copied!');
+                        }}
+                        className="inline-flex items-center gap-2 font-mono text-sm font-bold text-blue-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-800 transition-all active:scale-95"
+                    >
+                        {activeRoomInfo?.passcode}
+                        <Copy size={14} className="text-slate-400" />
+                    </button>
+
+                    {/* User Count Badge */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowUsers(!showUsers)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all active:scale-95 ${peers.length > 0
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                                : 'bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:bg-slate-800'
+                                }`}
+                        >
+                            <Users size={14} />
+                            {peers.length}
+                        </button>
+
+                        {/* Users Popover */}
+                        {showUsers && (
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 animate-in fade-in zoom-in-95 duration-200 z-50 shadow-xl">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-slate-300">In Room</span>
+                                    <button onClick={() => setShowUsers(false)} className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-700/50">
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                                <ul className="space-y-1.5 max-h-40 overflow-y-auto">
+                                    {peers.length === 0 ? (
+                                        <li className="text-xs text-slate-500 px-2 py-1.5">No one else yet</li>
+                                    ) : (
+                                        peers.map((peer) => (
+                                            <li key={peer.id} className="flex items-center gap-2 text-xs text-slate-300 px-2 py-1.5 rounded-lg hover:bg-slate-700/50">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                                                {peer.name || 'Unknown'}
+                                            </li>
+                                        ))
+                                    )}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide mask-fade-right">
+                {/* Action Buttons */}
+                <div className="flex items-center justify-center gap-2 pt-1">
                     <button
                         onClick={() => setTextModalOpen(true)}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border border-slate-700 flex items-center gap-2 whitespace-nowrap active:scale-95"
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 text-white rounded-xl text-sm font-semibold transition-all border border-slate-700/50 hover:border-blue-500/30 active:scale-95"
                     >
-                        <MessageSquare size={16} className="text-blue-400" />
-                        <span>Msg</span>
+                        <MessageSquare size={15} className="text-blue-400" />
+                        <span>Broadcast</span>
                     </button>
                     <button
                         onClick={handleBroadcastFile}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border border-slate-700 flex items-center gap-2 whitespace-nowrap active:scale-95"
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 text-white rounded-xl text-sm font-semibold transition-all border border-slate-700/50 hover:border-emerald-500/30 active:scale-95"
                     >
-                        <FileText size={16} className="text-emerald-400" />
-                        <span>File</span>
+                        <FileText size={15} className="text-emerald-400" />
+                        <span>Send File</span>
                     </button>
                     <button
                         onClick={handleLeave}
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border border-red-500/20 flex items-center gap-2 whitespace-nowrap active:scale-95"
+                        className="flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all border border-red-500/20 active:scale-95"
+                        title="Leave Room"
                     >
-                        <LogOut size={16} />
-                        Leave
+                        <LogOut size={15} />
                     </button>
+                </div>
+
+                {/* Waiting State - Always show */}
+                <div className="pt-4 pb-4 animate-in fade-in duration-500">
+                    <div className="flex flex-col items-center gap-4">
+                        {/* Pulsing radar effect */}
+                        <div className="relative">
+                            <div className="absolute inset-0 w-16 h-16 bg-blue-500/20 rounded-full animate-ping" />
+                            <div className="absolute inset-2 w-12 h-12 bg-blue-500/10 rounded-full animate-pulse" />
+                            <div className="relative w-16 h-16 bg-slate-800/60 rounded-full flex items-center justify-center border border-slate-700/50">
+                                <Users size={24} className="text-slate-400" />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <p className="text-slate-400 text-sm">Waiting for others to join...</p>
+                            <button
+                                onClick={() => setShowTips(!showTips)}
+                                className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-all"
+                                title="Room Info"
+                            >
+                                <Info size={16} />
+                            </button>
+                        </div>
+
+                        {/* Info Popover */}
+                        {showTips && (
+                            <div className="w-full max-w-xs bg-slate-800/80 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Room Tips</span>
+                                    <button onClick={() => setShowTips(false)} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                                <ul className="space-y-2 text-xs text-slate-400">
+                                    <li className="flex items-start gap-2">
+                                        <Copy size={12} className="text-blue-400 mt-0.5 shrink-0" />
+                                        Share the room code with others
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Shield size={12} className="text-emerald-400 mt-0.5 shrink-0" />
+                                        All transfers are end-to-end encrypted
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <Info size={12} className="text-amber-400 mt-0.5 shrink-0" />
+                                        Don't close this tab to keep room active
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Reuse Discovery Grid to show Room Peers */}
-            <div className="flex-1 w-full overflow-hidden relative">
-                <div className="absolute inset-0 overflow-y-auto pb-20 scrollbar-hide">
-                    <div className="w-full max-w-[1600px] mx-auto px-4">
-                        {peers.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-[40vh] text-slate-500 animate-in fade-in zoom-in-95 duration-500">
-                                <Users size={48} className="mb-4 opacity-50" />
-                                <p className="text-lg font-medium">Room is empty</p>
-                                <p className="text-sm">Share code <strong>{activeRoomInfo?.passcode}</strong> to invite others.</p>
-                            </div>
-                        ) : (
+            {/* Peer Grid when peers exist */}
+            {peers.length > 0 && (
+                <div className="flex-1 w-full overflow-hidden relative">
+                    <div className="absolute inset-0 overflow-y-auto pb-20 scrollbar-hide">
+                        <div className="w-full max-w-[1600px] mx-auto px-4">
                             <DiscoveryGrid
                                 peers={peers}
                                 onSelectPeer={(peer) => {
-                                    // Direct file send to specific peer
                                     if (onPeerSelect) onPeerSelect(peer);
                                 }}
                                 myDeviceName={myDevice?.name}
                                 onRightClickPeer={handlePeerTextShare}
                             />
-                        )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <TextShareModal
                 isOpen={textModalOpen}

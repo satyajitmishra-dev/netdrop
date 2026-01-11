@@ -110,11 +110,11 @@ const RemoteUpload = () => {
     };
 
     return (
-        <div className="w-full space-y-4">
+        <div className="w-full max-w-md mx-auto space-y-5 px-4 md:px-0">
             <VaultHeader />
 
             {status === 'idle' && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <FileDropzone file={file} onFileSelect={handleFileSelect} />
                     <PasscodeInput
                         value={passcode}
@@ -123,7 +123,7 @@ const RemoteUpload = () => {
                     <button
                         onClick={handleUpload}
                         disabled={!file}
-                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 text-white font-bold py-3.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 disabled:shadow-none active:scale-[0.98]"
                     >
                         <Lock size={18} />
                         Encrypt & Upload

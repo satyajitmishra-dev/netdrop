@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
 import { Shield } from 'lucide-react';
 import { setActiveTab } from './store/slices/transfer.slice';
+import { logout } from './store/slices/auth.slice';
+import { signOut } from 'firebase/auth';
+import { auth } from './config/firebase.config';
 
 // Hooks
 import { useAuthSession } from './hooks/useAuthSession';
@@ -187,8 +190,16 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    // Logic handled in slice mostly, but we can add specific cleanup if needed
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      dispatch(logout());
+      dispatch(setActiveTab('local'));
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
   };
 
   if (isDownloadPage) {
@@ -259,28 +270,25 @@ function App() {
             </div>
           </div>
         ) : activeTab === 'remote' ? (
-          <div className="w-full h-full flex flex-col items-center justify-between duration-500">
-            <div className="w-full flex-1 flex items-center justify-center px-4">
-              <PairingInterface
-                onPairSuccess={(peer) => {
-                  setTimeout(() => dispatch(setActiveTab('local')), 1000);
-                }}
-              />
-            </div>
-            <Footer />
+          <div className="w-full flex-1 flex items-center justify-center px-4 duration-500">
+            <PairingInterface
+              onPairSuccess={(peer) => {
+                setTimeout(() => dispatch(setActiveTab('local')), 1000);
+              }}
+            />
           </div>
         ) : activeTab === 'room' ? (
-          <div className="w-full h-full flex flex-col items-center justify-between duration-500">
-            <div className="w-full flex-1 flex items-center justify-center px-4">
+          <div className="w-full flex-1 flex flex-col items-center justify-between duration-500">
+            <div className="flex-1 flex items-center justify-center w-full px-4">
               <RoomManager onPeerSelect={handlePeerSelect} />
             </div>
             <Footer />
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-between px-4 duration-500">
-            <div className="w-full flex-1 flex flex-col items-center justify-center max-w-lg w-full space-y-6">
+          <div className="w-full flex-1 flex flex-col items-center justify-between duration-500">
+            <div className="flex-1 flex items-center justify-center w-full px-4">
               {isAuthenticated ? (
-                <>
+                <div className="max-w-lg w-full space-y-6">
                   <div className="w-full flex items-center gap-3 bg-slate-900/30 backdrop-blur-sm p-3 rounded-xl border border-slate-700/30">
                     <img src={user?.photoURL} alt="Profile" className="w-9 h-9 rounded-full border border-blue-500/30" />
                     <div className="flex-1 min-w-0">
@@ -289,7 +297,7 @@ function App() {
                     </div>
                   </div>
                   <RemoteUpload />
-                </>
+                </div>
               ) : (
                 <Login />
               )}
@@ -297,6 +305,9 @@ function App() {
             <Footer />
           </div>
         )}
+
+        {/* Footer for Remote tab */}
+        {activeTab === 'remote' && <Footer />}
       </main>
     </div>
   );

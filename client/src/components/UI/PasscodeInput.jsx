@@ -1,17 +1,26 @@
 import React from 'react';
+import { Key } from 'lucide-react';
 
 const PasscodeInput = ({ value, onChange }) => {
     return (
-        <div>
-            <label className="block text-xs text-slate-400 mb-1.5 font-medium">Passcode (Optional)</label>
-            <input
-                type="text"
-                placeholder="Leave empty for auto-generated"
-                value={value}
-                onChange={onChange}
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono text-sm"
-            />
-            <p className="text-xs text-slate-500 mt-1">Min 8 characters • Auto-generated if empty</p>
+        <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <Key size={12} className="text-slate-500" />
+                Passcode (Optional)
+            </label>
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Leave empty for auto-generated"
+                    value={value}
+                    onChange={onChange}
+                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm tracking-wide"
+                />
+            </div>
+            <p className="text-[11px] text-slate-500 flex items-center gap-1.5 pl-1">
+                <span className="w-1 h-1 rounded-full bg-emerald-500/50" />
+                Min 8 characters • Auto-generated if empty
+            </p>
         </div>
     );
 };

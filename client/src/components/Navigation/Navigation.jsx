@@ -1,5 +1,6 @@
 import React from 'react';
 import { Zap, Link, Users, Lock, Info, LogOut, User as UserIcon } from 'lucide-react';
+import SocketStatus from './SocketStatus';
 
 const Navigation = ({
     activeTab,
@@ -25,6 +26,9 @@ const Navigation = ({
                         <img src="/logo.svg" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
                     </div>
                     <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight">NetDrop</h1>
+                    <div className="ml-4">
+                        <SocketStatus />
+                    </div>
                 </div>
 
                 {/* Spacer */}
@@ -93,6 +97,7 @@ const Navigation = ({
 
                 {/* Actions */}
                 <div className="flex items-center gap-3">
+                    <SocketStatus />
                     <button
                         className="w-11 h-11 rounded-full bg-slate-800/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
                         title="About"
