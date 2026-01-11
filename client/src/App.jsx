@@ -18,6 +18,7 @@ import RemoteUpload from './components/Remote/RemoteUpload';
 import PairingInterface from './components/Remote/PairingInterface';
 import RoomManager from './components/Rooms/RoomManager';
 import SecureDownload from './pages/SecureDownload';
+import NotFound from './pages/NotFound';
 import Login from './components/Auth/Login';
 import TextShareModal from './components/Transfer/TextShareModal';
 import Navigation from './components/Navigation/Navigation';
@@ -46,14 +47,36 @@ function App() {
   });
 
   // Check Download Page Route
+  // Check URL Routing
   useEffect(() => {
-    // NOTE: Ideally use React Router <Routes> here if possible, keeping manual check for now to match current structure 
-    // unless user gave explicit permission to wrap root in Router which might be in main.jsx
-    if (window.location.pathname.startsWith('/download/')) {
-      setIsDownloadPage(true);
+    const path = window.location.pathname;
+
+    // Valid Routes:
+    // 1. Root '/'
+    // 2. '/download/:id'
+    // 3. (Optional) Future routes like '/room/:id' could go here
+
+    const isRoot = path === '/' || path === '';
+    const isDownload = path.startsWith('/download/');
+
+    if (!isRoot && !isDownload) {
+      // If none match, show 404
+      // We set a state to render NotFound instead of redirecting, to prevent URL flash
+      // But simpler: just render NotFound component conditionally based on state
     }
   }, []);
 
+  // Simpler Routing Logic using State
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  // Derive view
+  const isRoot = currentPath === '/' || currentPath === '';
+  const isDownload = currentPath.startsWith('/download/');
+  const isNotFound = !isRoot && !isDownload;
+
+  if (isNotFound) {
+    return <NotFound />;
+  }
 
   // Setup WebRTC Listeners (Once service is loaded)
   useEffect(() => {
