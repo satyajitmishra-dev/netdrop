@@ -46,7 +46,8 @@ app.use(cors({
 }));
 app.use(helmet({
     contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 }));
 app.use(morgan("dev"));
 app.use(express.json());

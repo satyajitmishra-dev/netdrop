@@ -3,7 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Bug, MessageSquare, Mail, Send, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5004');
+const getBaseUrl = () => {
+    let url = import.meta.env.VITE_API_URL || import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? '' : 'http://localhost:5004');
+    // Remove trailing slash and /api if present to avoid double api/api in requests
+    return url.replace(/\/api\/?$/, '').replace(/\/$/, '');
+};
+
+const API_URL = getBaseUrl();
+
+if (import.meta.env.PROD && !API_URL) {
+    console.warn('VITE_API_URL is not defined! API requests will fail.');
+}
 
 const FeedbackModal = ({ isOpen, onClose }) => {
     const [type, setType] = useState('feedback'); // 'feedback' | 'bug' | 'contact'
