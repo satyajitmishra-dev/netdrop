@@ -23,6 +23,7 @@ import Login from './components/Auth/Login';
 import TextShareModal from './components/Transfer/TextShareModal';
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/Common/Footer';
+import Banner from './components/UI/Banner';
 
 function App() {
   const dispatch = useDispatch();
@@ -222,6 +223,7 @@ function App() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center bg-slate-950 overflow-x-hidden text-slate-200 font-sans selection:bg-blue-500/30">
+      <Banner />
       <Toaster position="top-center" reverseOrder={false} toastOptions={{
         style: {
           background: '#0f172a',
@@ -254,7 +256,7 @@ function App() {
         onLogout={handleLogout}
       />
 
-      <main className="relative z-10 flex-1 w-full flex flex-col pt-16 md:pt-20 pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
+      <main className="relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
         {activeTab === 'local' ? (
           <div className="w-full h-full flex flex-col items-center justify-center duration-500">
             <div className="w-full h-full max-w-[1600px] mx-auto relative px-4 flex items-center justify-center">

@@ -22,9 +22,15 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Remote Config
 export const remoteConfig = getRemoteConfig(app);
-remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hour cache
+// In development, fetch fresh every time. In production, cache for 1 hour.
+remoteConfig.settings.minimumFetchIntervalMillis = import.meta.env.DEV ? 0 : 3600000;
 remoteConfig.defaultConfig = {
-    app_version: "v2.2.4"
+    app_version: "v2.2.4",
+    banner_enabled: false,
+    banner_text: "",
+    banner_link: "",
+    banner_type: "info",
+    banner_detail: "" // HTML/Text for popup details
 };
 
 export { fetchAndActivate, getValue };

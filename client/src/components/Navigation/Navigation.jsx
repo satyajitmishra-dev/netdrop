@@ -21,7 +21,7 @@ const Navigation = ({
     return (
         <>
             {/* Desktop Navigation - Single Row: Logo | Space | Nav Items | Info | Profile */}
-            <nav className="hidden md:flex fixed top-0 w-full px-4 lg:px-6 py-4 items-center z-50 pointer-events-none">
+            <nav className="hidden md:flex sticky top-0 w-full px-4 lg:px-6 py-4 items-center z-50 pointer-events-none data-[scrolled=true]:bg-slate-950/80 data-[scrolled=true]:backdrop-blur-md transition-colors duration-300">
                 <div className="flex items-center gap-2 lg:gap-3 pointer-events-auto">
                     {/* Logo content */}
                     <div className="relative w-9 h-9 flex items-center justify-center">
@@ -89,7 +89,7 @@ const Navigation = ({
             </nav>
 
             {/* Mobile - Top Bar with Logo & Actions */}
-            <nav className="md:hidden fixed top-0 w-full p-3 flex justify-between items-center z-50 bg-gradient-to-b from-slate-950/80 to-transparent pointer-events-auto">
+            <nav className="md:hidden sticky top-0 w-full p-3 flex justify-between items-center z-50 bg-gradient-to-b from-slate-950/80 to-transparent pointer-events-auto">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <div className="relative w-8 h-8 flex items-center justify-center">
