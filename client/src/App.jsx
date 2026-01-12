@@ -37,7 +37,18 @@ function App() {
 
   // Local State
   const [isEditingName, setIsEditingName] = useState(false);
-  const [isDownloadPage, setIsDownloadPage] = useState(false);
+
+  // Routing State
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handleNavigation = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
+  }, []);
+
+  const isDownloadPage = currentPath.startsWith('/download/');
+  const isNotFound = !isDownloadPage && currentPath !== '/' && currentPath !== '';
 
   const [textModal, setTextModal] = useState({
     isOpen: false,
@@ -45,34 +56,6 @@ function App() {
     peer: null,
     text: ''
   });
-
-  // Check Download Page Route
-  // Check URL Routing
-  useEffect(() => {
-    const path = window.location.pathname;
-
-    // Valid Routes:
-    // 1. Root '/'
-    // 2. '/download/:id'
-    // 3. (Optional) Future routes like '/room/:id' could go here
-
-    const isRoot = path === '/' || path === '';
-    const isDownload = path.startsWith('/download/');
-
-    if (!isRoot && !isDownload) {
-      // If none match, show 404
-      // We set a state to render NotFound instead of redirecting, to prevent URL flash
-      // But simpler: just render NotFound component conditionally based on state
-    }
-  }, []);
-
-  // Simpler Routing Logic using State
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  // Derive view
-  const isRoot = currentPath === '/' || currentPath === '';
-  const isDownload = currentPath.startsWith('/download/');
-  const isNotFound = !isRoot && !isDownload;
 
   if (isNotFound) {
     return <NotFound />;
