@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Monitor, Laptop, Tablet, Zap } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
+import { getShortName } from '../../utils/device';
 
 const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, isEditingName, onEditName, onNameChange }) => {
     const mySocketId = socketService.socket?.id;
@@ -45,14 +46,6 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
         if (type === 'mobile') return <Smartphone size={32} strokeWidth={1.5} />;
         if (type === 'tablet') return <Tablet size={32} strokeWidth={1.5} />;
         return <Laptop size={32} strokeWidth={1.5} />;
-    };
-
-    // Generate short device name like "PC-333" or "Mobile-A7F"
-    const getShortName = (peer) => {
-        const typeLabel = peer.type === 'mobile' ? 'Mobile' : peer.type === 'tablet' ? 'Tablet' : 'PC';
-        // Use last 3 chars of socket ID for unique identifier
-        const shortId = peer.id?.slice(-3).toUpperCase() || '???';
-        return `${typeLabel}-${shortId}`;
     };
 
     return (

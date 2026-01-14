@@ -6,6 +6,7 @@ import { socketService } from '../../services/socket.service';
 import DiscoveryGrid from '../Transfer/DiscoveryGrid';
 import TextShareModal from '../Transfer/TextShareModal';
 import { setActiveTab } from '../../store/slices/transfer.slice';
+import { getShortName } from '../../utils/device';
 
 const RoomManager = ({ onPeerSelect }) => {
     const dispatch = useDispatch();
@@ -32,7 +33,7 @@ const RoomManager = ({ onPeerSelect }) => {
         const handleBroadcastText = (data) => {
             toast((t) => (
                 <div onClick={() => toast.dismiss(t.id)} className="cursor-pointer">
-                    <p className="font-bold text-blue-400 text-xs mb-1">📢 BROADCAST from {data.sender?.name || 'Unknown'}</p>
+                    <p className="font-bold text-blue-400 text-xs mb-1">📢 BROADCAST from {getShortName(data.sender)}</p>
                     <p className="text-white text-sm">{data.text}</p>
                 </div>
             ), {
@@ -125,7 +126,7 @@ const RoomManager = ({ onPeerSelect }) => {
                     content: text,
                     sender: myDevice
                 });
-                toast.success(`Sent to ${selectedPeer.name}`);
+                toast.success(`Sent to ${getShortName(selectedPeer)}`);
             });
         } else {
             // Broadcast to room
@@ -334,7 +335,7 @@ const RoomManager = ({ onPeerSelect }) => {
                                         peers.map((peer) => (
                                             <li key={peer.id} className="flex items-center gap-2 text-xs text-slate-300 px-2 py-1.5 rounded-lg hover:bg-slate-700/50">
                                                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                {peer.name || 'Unknown'}
+                                                {getShortName(peer)}
                                             </li>
                                         ))
                                     )}
@@ -447,7 +448,7 @@ const RoomManager = ({ onPeerSelect }) => {
                     setTextModalMode('broadcast');
                 }}
                 mode="send"
-                peerName={textModalMode === 'peer' && selectedPeer ? selectedPeer.name : `Everyone in ${activeRoomInfo?.name}`}
+                peerName={textModalMode === 'peer' && selectedPeer ? getShortName(selectedPeer) : `Everyone in ${activeRoomInfo?.name}`}
                 onSend={handleBroadcastText}
             />
         </div>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Link as LinkIcon, Wifi, Loader2 } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
 import { toast } from 'react-hot-toast';
+import { getShortName } from '../../utils/device';
 
 const PairDeviceModal = ({ isOpen, onClose }) => {
     const [myCode, setMyCode] = useState(null);
@@ -21,6 +22,27 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
             });
         }
     }, [isOpen]);
+
+    // Global listener for pair-success - handles both sides (code creator and joiner)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const socket = socketService.getSocket();
+
+        const handlePairSuccess = ({ peer }) => {
+            // Format device name using shared utility to ensure it matches discovery grid
+            const shortName = getShortName(peer);
+
+            toast.success(`Connected to ${shortName} 🎉`, { duration: 3000 });
+            onClose();
+        };
+
+        socket.on('pair-success', handlePairSuccess);
+
+        return () => {
+            socket.off('pair-success', handlePairSuccess);
+        };
+    }, [isOpen, onClose]);
 
     // Reset when modal closes
     useEffect(() => {
@@ -81,24 +103,20 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
 
         const socket = socketService.getSocket();
 
+        // Only handle error here - success is handled by global listener
         const onError = (msg) => {
             setIsJoining(false);
             toast.error(msg);
             socket.off('pair-error', onError);
-            socket.off('pair-success', onSuccess);
-        };
-
-        const onSuccess = ({ peer }) => {
-            setIsJoining(false);
-            const deviceName = peer?.name || 'Unknown Device';
-            toast.success(`Connected to ${deviceName} 🎉`, { duration: 3000 });
-            socket.off('pair-error', onError);
-            socket.off('pair-success', onSuccess);
-            onClose();
         };
 
         socket.on('pair-error', onError);
-        socket.on('pair-success', onSuccess);
+
+        // Timeout to reset joining state if no response
+        setTimeout(() => {
+            setIsJoining(false);
+            socket.off('pair-error', onError);
+        }, 10000);
     };
 
     const enteredCode = inputCode.join('');

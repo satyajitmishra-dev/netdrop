@@ -13,9 +13,10 @@ import { useDeviceIdentity } from './hooks/useDeviceIdentity';
 import { useRealtimePresence } from './hooks/useRealtimePresence';
 import { useWebRTC } from './hooks/useWebRTC';
 
+import { getShortName } from './utils/device';
+
 import DiscoveryGrid from './components/Transfer/DiscoveryGrid';
 import RemoteUpload from './components/Remote/RemoteUpload';
-import PairingInterface from './components/Remote/PairingInterface';
 import PairDeviceModal from './components/Transfer/PairDeviceModal';
 import RoomManager from './components/Rooms/RoomManager';
 import SecureDownload from './pages/SecureDownload';
@@ -183,7 +184,7 @@ function App() {
           }
         };
         webRTCRef.current.connectToPeer(peer.id, file);
-        toast.loading(`Sending ${file.name} to ${peer.name}...`, { id: 'handshake' });
+        toast.loading(`Sending ${file.name} to ${getShortName(peer)}...`, { id: 'handshake' });
       }
     };
     input.click();
@@ -205,7 +206,7 @@ function App() {
         content: text,
         sender: { name: deviceName, type: deviceType }
       });
-      toast.success(`Sent to ${textModal.peer.name}`);
+      toast.success(`Sent to ${getShortName(textModal.peer)}`);
       setTextModal({ ...textModal, isOpen: false });
     }
   };
@@ -251,7 +252,7 @@ function App() {
         isOpen={textModal.isOpen}
         onClose={() => setTextModal({ ...textModal, isOpen: false })}
         mode={textModal.mode}
-        peerName={textModal.peer?.name || 'Unknown Device'}
+        peerName={getShortName(textModal.peer)}
         initialText={textModal.text}
         onSend={handleSendText}
       />
