@@ -1,60 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { X, Copy, Check, Link as LinkIcon, Smartphone, Wifi, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Copy, Link as LinkIcon, Wifi, Loader2 } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
 import { toast } from 'react-hot-toast';
 
 const PairDeviceModal = ({ isOpen, onClose }) => {
-    const [activeTab, setActiveTab] = useState('scan'); // 'scan' (My Code) | 'join' (Enter Code)
     const [myCode, setMyCode] = useState(null);
-    const [inputCode, setInputCode] = useState('');
+    const [inputCode, setInputCode] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
-    const [isCopied, setIsCopied] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
+    const inputRefs = useRef([]);
 
+    // Generate code when modal opens
     useEffect(() => {
-        if (isOpen && activeTab === 'scan' && !myCode) {
+        if (isOpen && !myCode) {
             setIsLoading(true);
             socketService.createPairCode((code) => {
                 setMyCode(code);
                 setIsLoading(false);
             });
         }
-    }, [isOpen, activeTab]);
+    }, [isOpen]);
+
+    // Reset when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setMyCode(null);
+            setInputCode(['', '', '', '', '', '']);
+            setIsLoading(false);
+            setIsJoining(false);
+        }
+    }, [isOpen]);
 
     const handleCopy = () => {
         if (myCode) {
             navigator.clipboard.writeText(myCode);
-            setIsCopied(true);
             toast.success('Code copied!');
-            setTimeout(() => setIsCopied(false), 2000);
         }
     };
 
-    const handleJoin = (e) => {
-        e.preventDefault();
-        if (inputCode.length !== 6) {
+    const handleInputChange = (index, value) => {
+        // Only allow digits
+        const digit = value.replace(/[^0-9]/g, '').slice(-1);
+        const newCode = [...inputCode];
+        newCode[index] = digit;
+        setInputCode(newCode);
+
+        // Auto-focus next input
+        if (digit && index < 5) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleKeyDown = (index, e) => {
+        // Handle backspace to go to previous input
+        if (e.key === 'Backspace' && !inputCode[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const handlePaste = (e) => {
+        const paste = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+        if (paste) {
+            const newCode = paste.split('').concat(Array(6 - paste.length).fill(''));
+            setInputCode(newCode.slice(0, 6));
+            inputRefs.current[Math.min(paste.length, 5)]?.focus();
+            e.preventDefault();
+        }
+    };
+
+    const handleJoin = () => {
+        const code = inputCode.join('');
+        if (code.length !== 6) {
             toast.error('Please enter a valid 6-digit code');
             return;
         }
 
-        setIsLoading(true);
-        socketService.joinWithCode(inputCode);
+        setIsJoining(true);
+        socketService.joinWithCode(code);
 
-        // Listen for success/error via socket listeners (setup in App.jsx or here?)
-        // Better to setup listeners in App.jsx or a useEffect here if we access global store?
-        // For MVP, let's assume global listener handles the actual connection, 
-        // but we can listen for error here.
         const socket = socketService.getSocket();
 
         const onError = (msg) => {
-            setIsLoading(false);
+            setIsJoining(false);
             toast.error(msg);
             socket.off('pair-error', onError);
             socket.off('pair-success', onSuccess);
         };
 
-        const onSuccess = () => {
-            setIsLoading(false);
-            toast.success('Device Linked Successfully!');
+        const onSuccess = ({ peer }) => {
+            setIsJoining(false);
+            const deviceName = peer?.name || 'Unknown Device';
+            toast.success(`Connected to ${deviceName} 🎉`, { duration: 3000 });
             socket.off('pair-error', onError);
             socket.off('pair-success', onSuccess);
             onClose();
@@ -64,108 +101,158 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
         socket.on('pair-success', onSuccess);
     };
 
-    if (!isOpen) return null;
+    const enteredCode = inputCode.join('');
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                >
+                    {/* Backdrop */}
+                    <motion.div
+                        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+                        onClick={onClose}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    />
 
-            <div className="relative glass-panel w-full max-w-md rounded-[32px] overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]">
-
-                {/* Header */}
-                <div className="p-6 pb-2 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/10">
-                            <LinkIcon size={24} strokeWidth={1.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-white leading-tight tracking-tight">Link New Device</h3>
-                            <p className="text-xs text-blue-300/60 font-medium mt-0.5 tracking-wide uppercase">Cross-network peer connection</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2.5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-all active:scale-95">
-                        <X size={22} />
-                    </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex p-1.5 bg-slate-920/50 m-6 mb-2 rounded-2xl border border-white/5 relative z-10">
-                    <button
-                        onClick={() => setActiveTab('scan')}
-                        className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'scan' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    {/* Modal */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                        className="relative w-full max-w-md bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl"
                     >
-                        <Smartphone size={16} /> My Code
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('join')}
-                        className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'join' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <LinkIcon size={16} /> Enter Code
-                    </button>
-                </div>
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-center relative">
+                            <button
+                                onClick={onClose}
+                                className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                            <h2 className="text-xl font-bold text-white">Pair Devices Remotely</h2>
+                        </div>
 
-                {/* Content */}
-                <div className="p-6 pt-4 h-[300px] flex flex-col justify-center">
-                    {activeTab === 'scan' ? (
-                        <div className="flex flex-col items-center text-center">
-                            <div className="relative group cursor-pointer" onClick={handleCopy}>
-                                <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full animate-pulse-slow" />
-                                <div className="relative w-64 h-24 bg-slate-900/80 border border-blue-500/30 rounded-3xl flex items-center justify-center gap-4 shadow-2xl transition-all group-hover:scale-[1.02] group-hover:border-blue-400/50">
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
+                            {/* My Code Section */}
+                            <div className="text-center space-y-4">
+                                {/* Large Passcode Display */}
+                                <div
+                                    className="flex justify-center gap-2 cursor-pointer group"
+                                    onClick={handleCopy}
+                                    title="Click to copy"
+                                >
                                     {isLoading ? (
-                                        <Loader2 className="animate-spin text-blue-400 w-8 h-8" />
+                                        <div className="flex items-center justify-center h-16">
+                                            <Loader2 className="animate-spin text-blue-400 w-8 h-8" />
+                                        </div>
                                     ) : (
-                                        <span className="text-5xl font-mono font-bold text-white tracking-[0.15em] drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]">{myCode || '------'}</span>
+                                        <>
+                                            {/* First 3 digits */}
+                                            {(myCode || '------').slice(0, 3).split('').map((digit, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-12 h-16 md:w-14 md:h-18 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-3xl md:text-4xl font-bold text-white group-hover:border-blue-500/50 transition-all"
+                                                >
+                                                    {digit}
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center px-1 text-slate-600 text-2xl font-light">-</div>
+                                            {/* Last 3 digits */}
+                                            {(myCode || '------').slice(3, 6).split('').map((digit, i) => (
+                                                <div
+                                                    key={i + 3}
+                                                    className="w-12 h-16 md:w-14 md:h-18 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-3xl md:text-4xl font-bold text-white group-hover:border-blue-500/50 transition-all"
+                                                >
+                                                    {digit}
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
                                 </div>
+
+                                <p className="text-slate-400 text-sm">
+                                    Input this code on another device<br />
+                                    <span className="text-slate-500">or have them share their code</span>
+                                </p>
                             </div>
 
-                            <div className="mt-8 space-y-2">
-                                <p className="text-sm font-medium text-slate-300">Share this one-time code</p>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
-                                    <span className="text-[10px] uppercase font-bold text-blue-300 tracking-wider">Active for 5:00</span>
+                            {/* Divider */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 h-px bg-slate-700/50"></div>
+                                <span className="text-xs font-bold text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-700/50">OR</span>
+                                <div className="flex-1 h-px bg-slate-700/50"></div>
+                            </div>
+
+                            {/* Enter Code Section */}
+                            <div className="space-y-4">
+                                {/* Input Boxes */}
+                                <div className="flex justify-center gap-2" onPaste={handlePaste}>
+                                    {inputCode.map((digit, i) => (
+                                        <React.Fragment key={i}>
+                                            <input
+                                                ref={el => inputRefs.current[i] = el}
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={1}
+                                                value={digit}
+                                                onChange={(e) => handleInputChange(i, e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(i, e)}
+                                                className="w-11 h-14 md:w-12 md:h-16 bg-slate-800/50 border border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            />
+                                            {i === 2 && <div className="flex items-center px-0.5 text-slate-600 text-xl">-</div>}
+                                        </React.Fragment>
+                                    ))}
                                 </div>
+
+                                <p className="text-center text-slate-500 text-xs">
+                                    Enter code from another device
+                                </p>
                             </div>
                         </div>
-                    ) : (
-                        <form onSubmit={handleJoin} className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-right-8 duration-300">
-                            <div className="space-y-4">
-                                <div className="text-center">
-                                    <h4 className="text-white font-bold text-lg">Enter Pairing Code</h4>
-                                    <p className="text-slate-400 text-xs mt-1">Found on the other device's "My Code" tab</p>
-                                </div>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    maxLength={6}
-                                    placeholder="000000"
-                                    value={inputCode}
-                                    onChange={(e) => setInputCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-3xl py-6 text-4xl font-mono text-center text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder-slate-800 tracking-[0.5em] transition-all"
-                                />
-                            </div>
 
+                        {/* Footer Buttons */}
+                        <div className="px-6 pb-6 flex gap-3">
                             <button
-                                type="submit"
-                                disabled={inputCode.length !== 6 || isLoading}
-                                className="btn-primary w-full py-4 text-base font-bold shadow-xl shadow-blue-500/20"
+                                onClick={onClose}
+                                className="flex-1 py-3.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-semibold transition-all border border-slate-700/50"
                             >
-                                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <LinkIcon size={20} />}
-                                Connect Devices
+                                Cancel
                             </button>
-                        </form>
-                    )}
-                </div>
+                            <button
+                                onClick={handleJoin}
+                                disabled={enteredCode.length !== 6 || isJoining}
+                                className="flex-[1.5] py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isJoining ? (
+                                    <Loader2 className="animate-spin" size={18} />
+                                ) : (
+                                    <LinkIcon size={18} />
+                                )}
+                                Pair
+                            </button>
+                        </div>
 
-                {/* Footer Hint */}
-                <div className="bg-slate-950/50 p-4 border-t border-white/5 text-center backdrop-blur-md">
-                    <p className="text-[10px] text-slate-500 font-bold flex items-center justify-center gap-2 uppercase tracking-widest">
-                        <Wifi size={12} strokeWidth={2.5} />
-                        Same WiFi Not Required
-                    </p>
-                </div>
-            </div>
-        </div>
+                        {/* Bottom Note */}
+                        <div className="bg-slate-950/50 px-6 py-3 border-t border-slate-800/50 text-center">
+                            <p className="text-[10px] text-slate-500 font-medium flex items-center justify-center gap-2 uppercase tracking-wider">
+                                <Wifi size={12} />
+                                Same WiFi Not Required
+                            </p>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

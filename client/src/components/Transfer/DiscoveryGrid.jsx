@@ -47,6 +47,14 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
         return <Laptop size={32} strokeWidth={1.5} />;
     };
 
+    // Generate short device name like "PC-333" or "Mobile-A7F"
+    const getShortName = (peer) => {
+        const typeLabel = peer.type === 'mobile' ? 'Mobile' : peer.type === 'tablet' ? 'Tablet' : 'PC';
+        // Use last 3 chars of socket ID for unique identifier
+        const shortId = peer.id?.slice(-3).toUpperCase() || '???';
+        return `${typeLabel}-${shortId}`;
+    };
+
     return (
         <div className="relative w-full h-full min-h-[500px] flex justify-center overflow-hidden">
 
@@ -178,10 +186,9 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                         const baseX = leftBoundary + col * slotWidth + slotWidth / 2;
                         const baseY = topBoundary + row * slotHeight + slotHeight / 2;
 
-                        // Add safe jitter (max 30% of slot size to keep inside slot)
-                        // Use alternating jitter directions based on row/col to reduce visual grids
-                        const jitterX = (seededRandom(1) - 0.5) * slotWidth * 0.6;
-                        const jitterY = (seededRandom(2) - 0.5) * slotHeight * 0.6;
+                        // Reduced jitter for cleaner, more organized layout
+                        const jitterX = (seededRandom(1) - 0.5) * slotWidth * 0.3;
+                        const jitterY = (seededRandom(2) - 0.5) * slotHeight * 0.3;
 
                         const leftPercent = baseX + jitterX;
                         const topPercent = baseY + jitterY;
@@ -233,13 +240,13 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                     {React.cloneElement(getDeviceIcon(peer.type), { size: window.innerWidth < 768 ? 22 : 26 })}
                                 </div>
 
-                                {/* Peer Name - Visible */}
-                                <div className="flex flex-col items-center text-center w-[130px]">
-                                    <span className="text-white font-semibold text-sm drop-shadow-lg truncate w-full px-1" title={peer.name}>
-                                        {peer.name || 'Device'}
-                                    </span>
-                                    <span className="text-slate-400 text-[10px] uppercase tracking-wider font-medium">
-                                        {peer.type}
+                                {/* Peer Name - Short format like PC-333 */}
+                                <div className="flex flex-col items-center text-center">
+                                    <span
+                                        className="text-white font-semibold text-sm drop-shadow-lg"
+                                        title={peer.name}
+                                    >
+                                        {getShortName(peer)}
                                     </span>
                                 </div>
                             </motion.div>

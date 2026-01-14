@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
-import { Shield } from 'lucide-react';
+import { Shield, Link as LinkIcon } from 'lucide-react';
 import { setActiveTab } from './store/slices/transfer.slice';
 import { logout } from './store/slices/auth.slice';
 import { signOut } from 'firebase/auth';
@@ -16,6 +16,7 @@ import { useWebRTC } from './hooks/useWebRTC';
 import DiscoveryGrid from './components/Transfer/DiscoveryGrid';
 import RemoteUpload from './components/Remote/RemoteUpload';
 import PairingInterface from './components/Remote/PairingInterface';
+import PairDeviceModal from './components/Transfer/PairDeviceModal';
 import RoomManager from './components/Rooms/RoomManager';
 import SecureDownload from './pages/SecureDownload';
 import NotFound from './pages/NotFound';
@@ -57,6 +58,18 @@ function App() {
     peer: null,
     text: ''
   });
+
+  // State for Remote pairing modal
+  const [showPairModal, setShowPairModal] = useState(false);
+
+  // When Remote tab is clicked, open modal and immediately switch back to local view
+  useEffect(() => {
+    if (activeTab === 'remote') {
+      setShowPairModal(true);
+      // Switch back to local so the discovery grid stays visible behind the modal
+      dispatch(setActiveTab('local'));
+    }
+  }, [activeTab, dispatch]);
 
   if (isNotFound) {
     return <NotFound />;
@@ -243,6 +256,11 @@ function App() {
         onSend={handleSendText}
       />
 
+      <PairDeviceModal
+        isOpen={showPairModal}
+        onClose={() => setShowPairModal(false)}
+      />
+
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-900/10 rounded-full blur-[120px] animate-pulse-slow opacity-50 md:opacity-100" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-blue-800/5 rounded-full blur-[120px] animate-pulse-slow delay-1000 opacity-50 md:opacity-100" />
@@ -277,14 +295,6 @@ function App() {
               />
             </div>
           </div>
-        ) : activeTab === 'remote' ? (
-          <div className="w-full flex-1 flex items-center justify-center px-4 duration-500">
-            <PairingInterface
-              onPairSuccess={(peer) => {
-                setTimeout(() => dispatch(setActiveTab('local')), 1000);
-              }}
-            />
-          </div>
         ) : activeTab === 'room' ? (
           <div className="w-full flex-1 flex flex-col items-center justify-between duration-500">
             <div className="flex-1 flex items-center justify-center w-full px-4">
@@ -313,9 +323,6 @@ function App() {
             <Footer />
           </div>
         )}
-
-        {/* Footer for Remote tab */}
-        {activeTab === 'remote' && <Footer />}
       </main>
     </div>
   );
