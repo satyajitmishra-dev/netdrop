@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? "/api" : "http://localhost:5004/api");
+// Production: Use Render backend. Development: Use localhost.
+const PRODUCTION_API = "https://netdrop-server.onrender.com/api";
+const API_URL = import.meta.env.VITE_SERVER_URL || (import.meta.env.PROD ? PRODUCTION_API : "http://localhost:5004/api");
 
 // Helper to get token from Redux store (via local storage or direct access if easier, 
 // but for cleaner service architecture, we'll try to get it from the store instance if possible or localStorage)

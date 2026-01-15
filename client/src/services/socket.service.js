@@ -1,6 +1,8 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? "/" : "http://localhost:5004");
+// Production: Use Render backend. Development: Use localhost.
+const PRODUCTION_SERVER = "https://netdrop-server.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? PRODUCTION_SERVER : "http://localhost:5004");
 
 class SocketService {
     constructor() {
