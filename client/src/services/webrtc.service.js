@@ -4,8 +4,13 @@ import { socketService } from "./socket.service";
 const RTC_CONFIG = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
     ],
+    iceCandidatePoolSize: 10,
 };
 
 class WebRTCService {
@@ -13,6 +18,7 @@ class WebRTCService {
         this.peerConnection = null;
         this.dataChannel = null;
         this.onDataReceived = null;
+        this.onSendProgress = null; // Add explicitly for robust feedback
         this.targetPeerId = null;
 
         // File Transfer State
@@ -140,7 +146,23 @@ class WebRTCService {
     }
 
     createPeerConnection() {
-        this.peerConnection = new RTCPeerConnection(RTC_CONFIG);
+        try {
+            this.peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+            this.peerConnection.oniceconnectionstatechange = () => {
+                const state = this.peerConnection.iceConnectionState;
+                if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+                    // Notify App.jsx to stop spinner
+                    if (this.onSendProgress) {
+                        this.onSendProgress({ type: 'rejected', error: 'Connection lost (Check Firewall/NAT)' });
+                    }
+                }
+            };
+        } catch (err) {
+            console.error("RTCPeerConnection failed:", err);
+            if (this.onSendProgress) this.onSendProgress({ type: 'rejected', error: 'WebRTC Init Failed' });
+            return;
+        }
 
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {

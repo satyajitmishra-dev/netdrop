@@ -2,11 +2,15 @@ export class SignalingService {
     constructor(io) {
         this.io = io;
         this.connectedUsers = new Map(); // Store { socketId: userData }
+        this.activeRooms = new Map();
+        this.pairingCodes = new Map(); // Initialize here
         this.setupListeners();
     }
 
     setupListeners() {
         this.io.on("connection", (socket) => {
+            // ... (rest of code) ...
+
             // Robust IP detection for Production (behind proxy/LB)
 
             const forwarded = socket.handshake.headers['x-forwarded-for'];
@@ -175,8 +179,10 @@ export class SignalingService {
                 setTimeout(() => this.pairingCodes.delete(code), 5 * 60 * 1000);
             });
 
-            socket.on('join-with-code', (code) => {
-                if (!this.pairingCodes || !this.pairingCodes.has(code)) {
+            socket.on('join-with-code', (rawCode) => {
+                const code = String(rawCode).trim();
+
+                if (!this.pairingCodes.has(code)) {
                     socket.emit('pair-error', 'Invalid or expired code');
                     return;
                 }

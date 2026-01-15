@@ -31,10 +31,10 @@ const Navigation = ({
             <nav className="hidden md:flex sticky top-0 w-full px-4 lg:px-6 py-4 items-center z-50 pointer-events-none data-[scrolled=true]:bg-slate-950/80 data-[scrolled=true]:backdrop-blur-md transition-colors duration-300">
                 {/* ... Logo Section ... */}
                 <div className="flex items-center gap-2 lg:gap-3 pointer-events-auto">
-                    <div className="relative w-9 h-9 flex items-center justify-center">
+                    <div className="relative w-12 h-12 flex items-center justify-center">
                         <img src="/logo.svg" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
                     </div>
-                    <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight">NetDrop</h1>
+                    <h1 className="text-xl lg:text-2xl font-bold text-white tracking-tight">NetDrop</h1>
                     <div className="ml-4">
                         <SocketStatus />
                     </div>
@@ -114,10 +114,10 @@ const Navigation = ({
             {/* Mobile Header */}
             <nav className="md:hidden sticky top-0 w-full p-3 flex justify-between items-center z-50 bg-gradient-to-b from-slate-950/80 to-transparent pointer-events-auto">
                 <div className="flex items-center gap-2">
-                    <div className="relative w-8 h-8 flex items-center justify-center">
+                    <div className="relative w-10 h-10 flex items-center justify-center">
                         <img src="/logo.svg" alt="NetDrop" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
                     </div>
-                    <h1 className="text-base font-bold text-white tracking-tight">NetDrop</h1>
+                    <h1 className="text-lg font-bold text-white tracking-tight">NetDrop</h1>
                 </div>
 
                 <div className="flex items-center gap-3">
