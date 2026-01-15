@@ -3,12 +3,28 @@ import { socketService } from "./socket.service";
 
 const RTC_CONFIG = {
     iceServers: [
+        // STUN servers (for discovering public IP)
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun3.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
+
+        // Free TURN servers for mobile NAT traversal (metered.ca free tier)
+        {
+            urls: "turn:a.relay.metered.ca:80",
+            username: "e8dd65c92f6d2067c9a89e4c",
+            credential: "uWdWNmkhvyqVmUFO"
+        },
+        {
+            urls: "turn:a.relay.metered.ca:443",
+            username: "e8dd65c92f6d2067c9a89e4c",
+            credential: "uWdWNmkhvyqVmUFO"
+        },
+        {
+            urls: "turn:a.relay.metered.ca:443?transport=tcp",
+            username: "e8dd65c92f6d2067c9a89e4c",
+            credential: "uWdWNmkhvyqVmUFO"
+        }
     ],
     iceCandidatePoolSize: 10,
 };
