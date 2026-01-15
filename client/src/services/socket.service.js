@@ -12,17 +12,23 @@ class SocketService {
     connect() {
         if (this.socket) return this.socket;
 
+        console.log(`[SocketService] Connecting to: ${SOCKET_URL}`);
+
         this.socket = io(SOCKET_URL, {
             withCredentials: true,
             transports: ["websocket", "polling"],
         });
 
         this.socket.on("connect", () => {
-            // Connection established
+            console.log(`[SocketService] ✅ Connected! Socket ID: ${this.socket.id}`);
         });
 
-        this.socket.on("connect_error", () => {
-            // Connection error handled silently
+        this.socket.on("connect_error", (err) => {
+            console.error(`[SocketService] ❌ Connection Error:`, err.message);
+        });
+
+        this.socket.on("disconnect", (reason) => {
+            console.warn(`[SocketService] Disconnected: ${reason}`);
         });
 
         return this.socket;
