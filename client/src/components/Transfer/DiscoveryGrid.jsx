@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Monitor, Laptop, Tablet, Zap } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
 import { getShortName } from '../../utils/device';
+import { useSound } from '../../hooks/useSound';
 
-const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, isEditingName, onEditName, onNameChange }) => {
+const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, myDeviceType, isEditingName, onEditName, onNameChange, onPeerDrop }) => {
+    const [dragOverPeerId, setDragOverPeerId] = React.useState(null);
     const mySocketId = socketService.socket?.id;
+    const { playConnect } = useSound();
 
     // Filter self from peers list using ID for safety, fallback to name
     const [filteredPeers, setFilteredPeers] = React.useState([]);
@@ -18,6 +21,14 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
         });
         setFilteredPeers(filtered);
     }, [peers, mySocketId, myDeviceName]);
+
+    // Play sound on new peer
+    React.useEffect(() => {
+        if (filteredPeers.length > 0) {
+            // playConnect(); // Optional: play only if length increases?
+            // For now, let's just leave it manual or play on mount if not empty
+        }
+    }, [filteredPeers.length]);
 
     const [loadingDots, setLoadingDots] = React.useState('');
     const [tooltipPeerId, setTooltipPeerId] = React.useState(null);
@@ -116,7 +127,7 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 onClick={onEditName}
                                 title="Click to rename"
                             >
-                                {myDeviceName || 'My Device'}
+                                {getShortName({ name: myDeviceName, type: myDeviceType, id: mySocketId || '????' })}
                                 <span className="opacity-0 group-hover/edit:opacity-100 text-[10px] text-blue-500 transition-opacity">✎</span>
                             </h3>
                         )}
@@ -197,10 +208,25 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 dragConstraints={containerRef}
                                 dragElastic={0.2}
                                 dragMomentum={false}
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
+                                initial={{ scale: 0, opacity: 0, y: 0 }}
+                                animate={{
+                                    scale: 1,
+                                    opacity: 1,
+                                    y: [0, -8, 0], // Gentle float
+                                }}
                                 exit={{ scale: 0, opacity: 0 }}
-                                transition={{ delay: index * 0.08, type: 'spring', stiffness: 200 }}
+                                transition={{
+                                    // Enter
+                                    scale: { type: 'spring', stiffness: 200, damping: 20 },
+                                    opacity: { duration: 0.2 },
+                                    // Float loop
+                                    y: {
+                                        duration: 3 + Math.random() * 2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        delay: Math.random() * 2
+                                    }
+                                }}
                                 className="absolute flex flex-col items-center justify-center gap-2 cursor-grab active:cursor-grabbing group"
                                 style={{
                                     left: `${clampedLeft}%`,
@@ -211,10 +237,26 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 onMouseLeave={handleHoverEnd}
                                 onDragStart={handleHoverEnd}
                                 onClick={(e) => { e.stopPropagation(); onSelectPeer(peer); }}
-                                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onRightClickPeer && onRightClickPeer(peer); }}
+                                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onRightClickPeer && onRightClickPeer(peer, e); }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setDragOverPeerId(peer.id);
+                                }}
+                                onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setDragOverPeerId(null);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setDragOverPeerId(null);
+                                    if (onPeerDrop) onPeerDrop(peer, e.dataTransfer.items);
+                                }}
                             >
                                 {/* Tooltip - Move Anywhere */}
-                                {tooltipPeerId === peer.id && (
+                                {tooltipPeerId === peer.id && !dragOverPeerId && (
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -228,7 +270,8 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 {/* Peer Icon */}
                                 <div className={`relative w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300
                                     ${peer.type === 'mobile' ? 'bg-indigo-600/40 text-indigo-200 ring-1 ring-indigo-400/60 hover:bg-indigo-500/60' : 'bg-blue-600/40 text-blue-200 ring-1 ring-blue-400/60 hover:bg-blue-500/60'}
-                                    backdrop-blur-md group-hover:scale-110 group-hover:ring-2 group-hover:shadow-xl`}
+                                    backdrop-blur-md group-hover:scale-110 group-hover:ring-2 group-hover:shadow-xl
+                                    ${dragOverPeerId === peer.id ? 'scale-125 ring-4 ring-emerald-500 bg-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.5)]' : ''}`}
                                 >
                                     {React.cloneElement(getDeviceIcon(peer.type), { size: window.innerWidth < 768 ? 22 : 26 })}
                                 </div>

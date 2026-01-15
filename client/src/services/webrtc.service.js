@@ -23,6 +23,14 @@ class WebRTCService {
             startTime: 0
         };
 
+        // Pending Outgoing Transfer
+        this.pendingTransfer = {
+            file: null,
+            peerId: null
+        };
+
+        this.pendingMeta = null;
+
         this.init();
     }
 
@@ -43,7 +51,7 @@ class WebRTCService {
     }
 
     // Initiator: Start connection
-    async connectToPeer(targetPeerId, payload = null) {
+    async connectToPeer(targetPeerId, payload = null, extraMeta = {}) {
         // 1. Reuse existing connection if valid
         if (this.peerConnection &&
             this.targetPeerId === targetPeerId &&
@@ -54,7 +62,7 @@ class WebRTCService {
             // Reusing existing WebRTC connection
             if (payload) {
                 if (payload instanceof File) {
-                    this.sendFile(payload);
+                    this.sendFile(payload, extraMeta);
                 } else {
                     // Wrap non-file payload in same structure if needed, or just send
                     // logic below assumes pendingPayload sends appropriately.
@@ -72,6 +80,7 @@ class WebRTCService {
 
         this.targetPeerId = targetPeerId;
         this.pendingPayload = payload;
+        this.pendingMeta = extraMeta;
 
         this.createPeerConnection();
 
@@ -153,11 +162,12 @@ class WebRTCService {
         channel.onopen = () => {
             if (this.pendingPayload) {
                 if (this.pendingPayload instanceof File) {
-                    this.sendFile(this.pendingPayload);
+                    this.sendFile(this.pendingPayload, this.pendingMeta || {});
                 } else {
                     this.sendData(JSON.stringify(this.pendingPayload));
                 }
                 this.pendingPayload = null;
+                this.pendingMeta = null;
             }
         };
 
@@ -178,7 +188,28 @@ class WebRTCService {
             try {
                 const parsed = JSON.parse(data);
 
-                if (parsed.type === 'file-start') {
+                if (parsed.type === 'file-request') {
+                    // Notify UI about incoming file request
+                    if (this.onDataReceived) {
+                        this.onDataReceived(parsed, this.targetPeerId);
+                    }
+                }
+                else if (parsed.type === 'file-accept') {
+                    // Receiver accepted the file, start sending
+                    if (this.pendingTransfer.file) {
+                        this.startChunkedTransfer(this.pendingTransfer.file);
+                        this.pendingTransfer = { file: null, peerId: null };
+                    }
+                }
+                else if (parsed.type === 'file-reject') {
+                    // Receiver rejected
+                    this.pendingTransfer = { file: null, peerId: null };
+                    if (this.onSendProgress) {
+                        this.onSendProgress({ type: 'rejected' });
+                    }
+                }
+                else if (parsed.type === 'file-start') {
+                    // Legacy or direct start (if we keep it) - Initialize reception
                     this.incomingFile.meta = parsed.meta;
                     this.incomingFile.buffer = [];
                     this.incomingFile.receivedSize = 0;
@@ -205,10 +236,28 @@ class WebRTCService {
         }
     }
 
-    async sendFile(file) {
-        const CHUNK_SIZE = 16 * 1024; // 16KB
+    async sendFile(file, extraMeta = {}) {
+        // Store file and wait for acceptance
+        this.pendingTransfer.file = file;
+        this.pendingTransfer.peerId = this.targetPeerId;
 
-        // 1. Send Metadata
+        // Send Request
+        this.sendData(JSON.stringify({
+            type: 'file-request',
+            meta: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                ...extraMeta // Pass sender email etc
+            }
+        }));
+    }
+
+    async startChunkedTransfer(file) {
+        const CHUNK_SIZE = 16 * 1024; // 16KB
+        const MAX_BUFFER_THRESHOLD = 64 * 1024; // 64KB
+
+        // 1. Send Metadata (Start Signal) - Still needed for receiver to init buffer
         this.sendData(JSON.stringify({
             type: 'file-start',
             meta: {
@@ -219,22 +268,41 @@ class WebRTCService {
         }));
 
         // 2. Read and Send Chunks
-        const arrayBuffer = await file.arrayBuffer();
-        for (let i = 0; i < arrayBuffer.byteLength; i += CHUNK_SIZE) {
-            const chunk = arrayBuffer.slice(i, i + CHUNK_SIZE);
+        let offset = 0;
 
-            // Wait for buffer to clear if too full
-            if (this.dataChannel.bufferedAmount > 16 * 1024 * 1024) { // 16MB buffer limit
-                await new Promise(r => setTimeout(r, 100));
+        while (offset < file.size) {
+            const chunkBlob = file.slice(offset, offset + CHUNK_SIZE);
+            const chunk = await chunkBlob.arrayBuffer();
+
+            while (this.dataChannel.bufferedAmount > MAX_BUFFER_THRESHOLD) {
+                await new Promise(r => setTimeout(r, 5));
             }
 
-            this.sendData(chunk);
+            try {
+                this.sendData(chunk);
+                offset += CHUNK_SIZE;
+
+                if (this.onSendProgress) {
+                    // Optional progress
+                }
+
+            } catch (error) {
+                console.warn("Send failed, retrying chunk...", error);
+                await new Promise(r => setTimeout(r, 50));
+            }
         }
 
-        // File sent successfully
         if (this.onSendProgress) {
             this.onSendProgress({ type: 'complete', file: file });
         }
+    }
+
+    acceptFileTransfer() {
+        this.sendData(JSON.stringify({ type: 'file-accept' }));
+    }
+
+    rejectFileTransfer() {
+        this.sendData(JSON.stringify({ type: 'file-reject' }));
     }
 
     handleFileChunk(buffer) {

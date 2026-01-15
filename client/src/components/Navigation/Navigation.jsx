@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Zap, Link, Users, Lock, Info, LogOut, User as UserIcon } from 'lucide-react';
+import { Zap, Link, Users, Lock, Info, LogOut, User as UserIcon, Download, Clock } from 'lucide-react';
 import SocketStatus from './SocketStatus';
 import AboutModal from '../UI/AboutModal';
 import Tooltip from '../UI/Tooltip';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 // ... (imports remain same)
 
@@ -14,10 +15,13 @@ const Navigation = ({
     onLogout
 }) => {
     const [showAbout, setShowAbout] = useState(false);
+    const { isInstallable, installPWA } = usePWAInstall();
+
     const navItems = [
         { id: 'local', icon: Zap, label: 'Local' },
         { id: 'remote', icon: Link, label: 'Remote' },
         { id: 'room', icon: Users, label: 'Room' },
+        { id: 'history', icon: Clock, label: 'History' },
         { id: 'vault', icon: Lock, label: 'Vault' }
     ];
 
@@ -57,7 +61,20 @@ const Navigation = ({
                 </div>
 
                 {/* Info & Profile */}
-                <div className="flex items-center ml-3 lg:ml-4 pointer-events-auto">
+                <div className="flex items-center ml-3 lg:ml-4 pointer-events-auto gap-2">
+                    {/* Install PWA Button */}
+                    {isInstallable && (
+                        <Tooltip content="Install App" position="bottom">
+                            <button
+                                onClick={installPWA}
+                                className="h-11 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center gap-2 transition-all active:scale-95 animate-pulse-subtle"
+                            >
+                                <Download size={18} />
+                                <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Install</span>
+                            </button>
+                        </Tooltip>
+                    )}
+
                     <Tooltip content="About NetDrop" position="bottom">
                         <button
                             onClick={() => setShowAbout(true)}
@@ -105,6 +122,14 @@ const Navigation = ({
 
                 <div className="flex items-center gap-3">
                     <SocketStatus />
+                    {isInstallable && (
+                        <button
+                            onClick={installPWA}
+                            className="w-11 h-11 rounded-full bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 flex items-center justify-center text-emerald-400 active:scale-95 transition-transform"
+                        >
+                            <Download size={20} />
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowAbout(true)}
                         className="w-11 h-11 rounded-full bg-slate-800/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 active:scale-95 transition-transform"

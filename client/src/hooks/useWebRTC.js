@@ -1,29 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useWebRTCContext } from '../context/WebRTCContext';
 
 export const useWebRTC = () => {
-    const webRTCRef = useRef(null);
-    const isLoaded = useRef(false);
+    const webRTCService = useWebRTCContext();
 
-    useEffect(() => {
-        let mounted = true;
+    // Compatibility wrapper to match previous hook signature
+    // Previous signature returned { webRTCRef: { current: service } }
+    // We'll return the service directly but also maintain the ref structure if strictly needed by App (it was used as webrtcRef.current)
+    // However, looking at App.jsx, it accesses webRTCRef.current.
+    // So we should return an object that mimics that structure OR refactor App.jsx deeper.
+    // Refactoring App.jsx is better. But let's keep this hook simple.
 
-        import('../services/webrtc.service').then(({ webRTCService }) => {
-            if (mounted) {
-                webRTCRef.current = webRTCService;
-                isLoaded.current = true;
-            }
-        });
-
-        // Cleanup? WebRTC service is singleton, so maybe not strictly needed to nullify
-        return () => { mounted = false; };
-    }, []);
-
-    const getService = () => {
-        if (!isLoaded.current) {
-            console.warn("WebRTC service not yet fully loaded");
-        }
-        return webRTCRef.current;
+    return {
+        webRTCRef: { current: webRTCService }, // Backward compatibility for now
+        webRTCService
     };
-
-    return { webRTCRef, getService };
 };
+

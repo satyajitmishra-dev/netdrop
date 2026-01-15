@@ -124,13 +124,13 @@ const RoomManager = ({ onPeerSelect }) => {
                 webRTCService.connectToPeer(selectedPeer.id, {
                     type: 'text',
                     content: text,
-                    sender: myDevice
+                    sender: { ...myDevice, id: socketService.getSocket()?.id }
                 });
                 toast.success(`Sent to ${getShortName(selectedPeer)}`);
             });
         } else {
             // Broadcast to room
-            socketService.broadcastText(text, myDevice);
+            socketService.broadcastText(text, { ...myDevice, id: socketService.getSocket()?.id });
             toast.success("Message broadcasted to room!");
         }
 
@@ -433,6 +433,7 @@ const RoomManager = ({ onPeerSelect }) => {
                                     if (onPeerSelect) onPeerSelect(peer);
                                 }}
                                 myDeviceName={myDevice?.name}
+                                myDeviceType={myDevice?.type}
                                 onRightClickPeer={handlePeerTextShare}
                             />
                         </div>

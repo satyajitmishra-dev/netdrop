@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Send, Type, Clipboard } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onSend }) => {
+const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onSend, onSendClipboard }) => {
     const [text, setText] = useState(initialText);
 
     useEffect(() => {
@@ -112,28 +112,43 @@ const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onS
 
                         {/* Footer */}
                         <div className="px-5 pb-5 flex gap-3">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border border-slate-700/50"
-                            >
-                                {mode === 'send' ? 'Cancel' : 'Close'}
-                            </button>
-
                             {mode === 'send' ? (
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={!text.trim()}
-                                    className="flex-[1.5] py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                                >
-                                    <Send size={16} /> Send
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            onSendClipboard();
+                                            onClose();
+                                        }}
+                                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border border-slate-700/50 flex items-center justify-center gap-2"
+                                        title="Send current clipboard content immediately"
+                                    >
+                                        <Clipboard size={16} /> Send Clipboard
+                                    </button>
+
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={!text.trim()}
+                                        className="flex-[1.5] py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                    >
+                                        <Send size={16} /> Send Text
+                                    </button>
+                                </>
                             ) : (
-                                <button
-                                    onClick={handleCopy}
-                                    className="flex-[1.5] py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
-                                >
-                                    <Copy size={16} /> Copy
-                                </button>
+                                <>
+                                    <button
+                                        onClick={onClose}
+                                        className="flex-1 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border border-slate-700/50"
+                                    >
+                                        Close
+                                    </button>
+
+                                    <button
+                                        onClick={handleCopy}
+                                        className="flex-[1.5] py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
+                                    >
+                                        <Copy size={16} /> Copy
+                                    </button>
+                                </>
                             )}
                         </div>
                     </motion.div>
