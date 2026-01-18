@@ -1,0 +1,21 @@
+{
+    "name": "netdrop-root",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "postinstall": "npm run install-all",
+        "install-server": "cd server && npm install",
+        "install-client": "cd client && npm install",
+        "install-all": "npm run install-server && npm run install-client",
+        "build-client": "cd client && npm run build",
+        "build": "npm run build-client",
+        "start": "node server/index.js",
+        "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}
