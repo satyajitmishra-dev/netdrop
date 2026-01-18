@@ -131,6 +131,8 @@ class WebRTCService {
 
         this.targetPeerId = senderId;
         this.createPeerConnection();
+        // Initialize candidate queue
+        this.candidateQueue = [];
 
         // Receiver waits for data channel event
         this.peerConnection.ondatachannel = (event) => {
@@ -138,26 +140,64 @@ class WebRTCService {
             this.setupDataChannel(this.dataChannel);
         };
 
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        try {
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            // Process queued candidates
+            this.processCandidateQueue();
 
-        // Create Answer
-        const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
+            // Create Answer
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
 
-        // Send Answer
-        socketService.getSocket().emit("signal-answer", {
-            targetId: senderId,
-            answer,
-        });
+            // Send Answer
+            socketService.getSocket().emit("signal-answer", {
+                targetId: senderId,
+                answer,
+            });
+        } catch (err) {
+            console.error("Error handling offer:", err);
+            if (this.onSendProgress) this.onSendProgress({ type: 'rejected', error: 'Connection Failed (Offer)' });
+        }
     }
 
     async handleAnswer(answer) {
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        try {
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            // Process queued candidates
+            this.processCandidateQueue();
+        } catch (err) {
+            console.error("Error handling answer:", err);
+        }
     }
 
     async handleIceCandidate(candidate) {
-        if (this.peerConnection) {
-            await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        if (!this.peerConnection) return;
+
+        // If remote description is set, add immediately
+        // Otherwise queue it
+        if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+            try {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (err) {
+                console.error("Error adding received ice candidate", err);
+            }
+        } else {
+            // Queue it
+            if (!this.candidateQueue) this.candidateQueue = [];
+            this.candidateQueue.push(candidate);
+        }
+    }
+
+    async processCandidateQueue() {
+        if (!this.peerConnection || !this.candidateQueue) return;
+
+        while (this.candidateQueue.length > 0) {
+            const candidate = this.candidateQueue.shift();
+            try {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (err) {
+                console.error("Error flushing candidate queue", err);
+            }
         }
     }
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, Monitor, Laptop, Tablet, Zap } from 'lucide-react';
+import { Smartphone, Monitor, Laptop, Tablet, Zap, Globe, Wifi, Network } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
-import { getShortName } from '../../utils/device';
+import { getShortName, isDefaultDeviceName } from '../../utils/device';
 import { useSound } from '../../hooks/useSound';
 
-const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, myDeviceType, isEditingName, onEditName, onNameChange, onPeerDrop }) => {
+const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceName, myDeviceType, myDeviceBrowser, myDeviceNetwork, isEditingName, onEditName, onNameChange, onPeerDrop }) => {
     const [dragOverPeerId, setDragOverPeerId] = React.useState(null);
     const mySocketId = socketService.socket?.id;
     const { playConnect } = useSound();
@@ -115,7 +115,11 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 autoFocus
                                 type="text"
                                 className="bg-transparent border-b border-blue-500 text-white font-bold text-lg w-48 focus:outline-none text-center py-1"
-                                defaultValue={myDeviceName}
+                                defaultValue={
+                                    isDefaultDeviceName(myDeviceName)
+                                        ? getShortName({ name: myDeviceName, type: myDeviceType, id: mySocketId || '????' })
+                                        : myDeviceName
+                                }
                                 onBlur={onNameChange}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') e.target.blur();
@@ -137,7 +141,7 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                     <div className="flex items-center gap-2 mt-2">
                         <span className="h-[1px] w-6 bg-gradient-to-r from-transparent to-blue-500/30"></span>
                         <p className="text-blue-400/60 text-[10px] font-semibold tracking-[0.2em] uppercase">
-                            Safe • Secure • Fast
+                            {myDeviceBrowser || 'WEB'} • {myDeviceNetwork || 'UNKNOWN'}
                         </p>
                         <span className="h-[1px] w-6 bg-gradient-to-l from-transparent to-blue-500/30"></span>
                     </div>
@@ -284,6 +288,11 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                     >
                                         {getShortName(peer)}
                                     </span>
+                                    {(peer.browser || peer.network) && (
+                                        <span className="text-blue-200/80 text-[9px] font-medium leading-none mt-0.5 tracking-wide">
+                                            {peer.browser === 'Web' ? 'WEB' : peer.browser} • {peer.network}
+                                        </span>
+                                    )}
                                 </div>
                             </motion.div>
                         );

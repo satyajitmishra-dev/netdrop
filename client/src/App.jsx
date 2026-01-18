@@ -49,8 +49,8 @@ function App() {
 
   // Custom Hooks
   useAuthSession();
-  const { name: deviceName, type: deviceType, renameDevice } = useDeviceIdentity();
-  useRealtimePresence({ name: deviceName, type: deviceType });
+  const { name: deviceName, type: deviceType, browser: deviceBrowser, network: deviceNetwork, renameDevice } = useDeviceIdentity();
+  useRealtimePresence({ name: deviceName, type: deviceType, browser: deviceBrowser, network: deviceNetwork });
   const { webRTCRef } = useWebRTC();
 
   // Local State
@@ -510,6 +510,8 @@ function App() {
                 onPeerDrop={handlePeerDrop}
                 myDeviceName={deviceName}
                 myDeviceType={deviceType}
+                myDeviceBrowser={deviceBrowser}
+                myDeviceNetwork={deviceNetwork}
                 isEditingName={isEditingName}
                 onEditName={() => setIsEditingName(true)}
                 onNameChange={(e) => {
