@@ -73,51 +73,73 @@ class WebRTCService {
     }
 
     // Initiator: Start connection
-    async connectToPeer(targetPeerId, payload = null, extraMeta = {}) {
-        // 1. Reuse existing connection if valid
-        if (this.peerConnection &&
-            this.targetPeerId === targetPeerId &&
-            this.peerConnection.connectionState === 'connected' &&
-            this.dataChannel &&
-            this.dataChannel.readyState === 'open') {
+    connectToPeer(targetPeerId, payload = null, extraMeta = {}) {
+        return new Promise((resolve, reject) => {
+            // 1. Reuse existing connection if valid
+            if (this.peerConnection &&
+                this.targetPeerId === targetPeerId &&
+                this.peerConnection.connectionState === 'connected' &&
+                this.dataChannel &&
+                this.dataChannel.readyState === 'open') {
 
-            // Reusing existing WebRTC connection
-            if (payload) {
-                if (payload instanceof File) {
-                    this.sendFile(payload, extraMeta);
-                } else {
-                    // Wrap non-file payload in same structure if needed, or just send
-                    // logic below assumes pendingPayload sends appropriately.
-                    this.sendData(JSON.stringify(payload));
+                // Reusing existing WebRTC connection
+                try {
+                    if (payload) {
+                        if (payload instanceof File) {
+                            this.sendFile(payload, extraMeta);
+                        } else {
+                            this.sendData(JSON.stringify(payload));
+                        }
+                    }
+                    resolve(); // Resolved immediately as channel is open
+                } catch (e) {
+                    reject(e);
                 }
+                return;
             }
-            return;
-        }
 
-        // 2. Clean up old connection if switching peers or restarting
-        if (this.peerConnection) {
-            this.peerConnection.close();
-            this.peerConnection = null;
-        }
+            // 2. Clean up old connection
+            if (this.peerConnection) {
+                this.peerConnection.close();
+                this.peerConnection = null;
+            }
 
-        this.targetPeerId = targetPeerId;
-        this.pendingPayload = payload;
-        this.pendingMeta = extraMeta;
+            this.targetPeerId = targetPeerId;
+            this.pendingPayload = payload;
+            this.pendingMeta = extraMeta;
 
-        this.createPeerConnection();
+            // Store promise functions to resolve later
+            this.connectResolve = resolve;
+            this.connectReject = reject;
 
-        // Create Data Channel
-        this.dataChannel = this.peerConnection.createDataChannel("file-transfer");
-        this.setupDataChannel(this.dataChannel);
+            this.createPeerConnection();
 
-        // Create Offer
-        const offer = await this.peerConnection.createOffer();
-        await this.peerConnection.setLocalDescription(offer);
+            // Create Data Channel
+            this.dataChannel = this.peerConnection.createDataChannel("file-transfer");
+            this.setupDataChannel(this.dataChannel);
 
-        // Send Offer
-        socketService.getSocket().emit("signal-offer", {
-            targetId: targetPeerId,
-            offer,
+            // Create Offer
+            this.peerConnection.createOffer()
+                .then(offer => this.peerConnection.setLocalDescription(offer))
+                .then(() => {
+                    socketService.getSocket().emit("signal-offer", {
+                        targetId: targetPeerId,
+                        offer: this.peerConnection.localDescription,
+                    });
+                })
+                .catch(err => {
+                    console.error("Error creating offer:", err);
+                    if (this.connectReject) this.connectReject(err);
+                });
+
+            // Set a Safety Timeout (15s)
+            setTimeout(() => {
+                if (this.connectReject && this.peerConnection?.connectionState !== 'connected') {
+                    this.connectReject(new Error("Connection Request Timed Out (15s)"));
+                    this.connectReject = null;
+                    this.connectResolve = null;
+                }
+            }, 15000);
         });
     }
 
@@ -238,19 +260,50 @@ class WebRTCService {
         channel.binaryType = 'arraybuffer'; // Crucial for file transfer
 
         channel.onopen = () => {
+            console.log("Data Channel Opened");
             if (this.pendingPayload) {
-                if (this.pendingPayload instanceof File) {
-                    this.sendFile(this.pendingPayload, this.pendingMeta || {});
-                } else {
-                    this.sendData(JSON.stringify(this.pendingPayload));
+                try {
+                    if (this.pendingPayload instanceof File) {
+                        this.sendFile(this.pendingPayload, this.pendingMeta || {});
+                    } else {
+                        this.sendData(JSON.stringify(this.pendingPayload));
+                    }
+                    if (this.connectResolve) {
+                        this.connectResolve(); // Success!
+                        this.connectResolve = null;
+                        this.connectReject = null;
+                    }
+                } catch (err) {
+                    if (this.connectReject) {
+                        this.connectReject(err);
+                        this.connectResolve = null;
+                        this.connectReject = null;
+                    }
                 }
                 this.pendingPayload = null;
                 this.pendingMeta = null;
+            } else {
+                // Just connected without payload
+                if (this.connectResolve) {
+                    this.connectResolve();
+                    this.connectResolve = null;
+                    this.connectReject = null;
+                }
             }
         };
 
         channel.onclose = () => {
+            console.log("Data Channel Closed");
             this.incomingFile = { buffer: [], meta: null, receivedSize: 0, startTime: 0 };
+        };
+
+        channel.onerror = (error) => {
+            console.error("Data Channel Error:", error);
+            if (this.connectReject) {
+                this.connectReject(error);
+                this.connectResolve = null;
+                this.connectReject = null;
+            }
         };
 
         channel.onmessage = (event) => {

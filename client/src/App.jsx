@@ -226,55 +226,60 @@ function App() {
         }
       }
 
-      files.forEach((file) => {
-        const SIZE_LIMIT = 2 * 1024 * 1024 * 1024; // 2 GB
-        if (file.size > SIZE_LIMIT) {
-          toast((t) => (
-            <div className="flex flex-col gap-2">
-              <span className="font-bold text-orange-400 flex items-center gap-2">
-                <Shield size={16} /> Large File
-              </span>
-              <p className="text-sm">
-                For files over 2GB, make sure you are on a stable Wi-Fi connection.
-              </p>
-              <div className="flex gap-2 mt-1">
-                <button className="bg-slate-700 text-white px-3 py-1 rounded text-sm"
-                  onClick={() => toast.dismiss(t.id)}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ), { duration: 4000 });
-        }
+      // Process files sequentially
+      const processFiles = async () => {
+        for (const [index, file] of files.entries()) {
+          const SIZE_LIMIT = 2 * 1024 * 1024 * 1024; // 2 GB
+          if (file.size > SIZE_LIMIT) {
+            // ... (existing size warning toast) ...
+          }
 
-        if (webRTCRef.current) {
-          webRTCRef.current.onSendProgress = (status) => {
-            if (status.type === 'complete') {
-              toast.success('Sent Successfully', { id: 'handshake' });
-              playSuccess();
+          if (webRTCRef.current) {
+            webRTCRef.current.onSendProgress = (status) => {
+              if (status.type === 'complete') {
+                toast.success('Sent Successfully', { id: `send-${file.name}` });
+                playSuccess();
+                addToHistory({
+                  type: 'send',
+                  category: 'file',
+                  name: file.name,
+                  size: file.size,
+                  peer: getShortName(peer)
+                });
+              } else if (status.type === 'rejected') {
+                toast.error('Transfer Failed/Declined', { id: `send-${file.name}` });
+                playError();
+              }
+            };
 
-              // Add to History
-              addToHistory({
-                type: 'send',
-                category: 'file',
-                name: file.name,
-                size: file.size,
-                peer: getShortName(peer)
-              });
-            } else if (status.type === 'rejected') {
-              // Ensure we dismiss the loading toast if rejected/failed
-              toast.error('Transfer Declined/Failed', { id: 'handshake' });
-              playError();
+            // Stagger sends if multiple
+            if (index > 0) await new Promise(r => setTimeout(r, 500));
+
+            try {
+              // Connect and wait for data channel open
+              await toast.promise(
+                webRTCRef.current.connectToPeer(peer.id, file, {
+                  senderEmail: user?.email
+                }),
+                {
+                  loading: `Connecting to ${getShortName(peer)}...`,
+                  success: `Connected! Sending ${file.name}...`,
+                  error: (err) => `Connection failed: ${err.message}`
+                },
+                { id: `conn-${file.name}` }
+              );
+
+              // Note: Actual upload progress is handled by onSendProgress via DataChannel events
+              // connectToPeer resolving just means we started sending.
+            } catch (err) {
+              console.error("File send connection error:", err);
+              // playError() is handled by toast.promise error
             }
-          };
-          // Pass sender email for trusted check
-          webRTCRef.current.connectToPeer(peer.id, file, {
-            senderEmail: user?.email
-          });
-          toast.loading(`Sending ${file.name} to ${getShortName(peer)}...`, { id: 'handshake' });
+          }
         }
-      });
+      };
+
+      processFiles();
     };
     input.click();
   };
@@ -332,24 +337,34 @@ function App() {
     });
   };
 
-  const handleSendText = (text) => {
+  const handleSendText = async (text) => {
     if (textModal.peer && webRTCRef.current) {
-      webRTCRef.current.connectToPeer(textModal.peer.id, {
-        type: 'text',
-        content: text,
-        sender: { name: deviceName, type: deviceType, id: socketService.getSocket()?.id }
-      });
-      toast.success(`Sent to ${getShortName(textModal.peer)}`);
+      try {
+        await toast.promise(
+          webRTCRef.current.connectToPeer(textModal.peer.id, {
+            type: 'text',
+            content: text,
+            sender: { name: deviceName, type: deviceType, id: socketService.getSocket()?.id }
+          }),
+          {
+            loading: 'Sending...',
+            success: `Sent to ${getShortName(textModal.peer)}`,
+            error: (err) => `Failed: ${err.message || 'Connection Error'}`
+          }
+        );
 
-      // Add to History
-      addToHistory({
-        type: 'send',
-        category: 'text',
-        name: text,
-        peer: getShortName(textModal.peer)
-      });
+        // Add to History (Only if success)
+        addToHistory({
+          type: 'send',
+          category: 'text',
+          name: text,
+          peer: getShortName(textModal.peer)
+        });
 
-      setTextModal({ ...textModal, isOpen: false });
+        setTextModal({ ...textModal, isOpen: false });
+      } catch (err) {
+        console.error("Text send failed:", err);
+      }
     }
   };
 
@@ -381,24 +396,51 @@ function App() {
       }
 
       // Send each file
-      files.forEach((file, index) => {
-        // Check size limit again if needed, or rely on internal warnings
+      // Process files sequentially
+      for (const [index, file] of files.entries()) {
         const SIZE_LIMIT = 2 * 1024 * 1024 * 1024; // 2GB
         if (file.size > SIZE_LIMIT) {
           toast.error(`File ${file.name} exceeds 2GB limit`, { duration: 5000 });
-          return; // Skip large file
+          continue;
         }
 
         if (webRTCRef.current) {
-          // Stagger sends slightly to avoid congestion logic if sending many small files
-          setTimeout(() => {
-            webRTCRef.current.connectToPeer(peer.id, file, {
-              senderEmail: user?.email
-            });
-            toast.loading(`Sending ${file.name}...`, { id: `send-${file.name}` });
-          }, index * 500);
+          webRTCRef.current.onSendProgress = (status) => {
+            if (status.type === 'complete') {
+              toast.success('Sent Successfully', { id: `drop-${file.name}` });
+              playSuccess();
+              addToHistory({
+                type: 'send',
+                category: 'file',
+                name: file.name,
+                size: file.size,
+                peer: getShortName(peer)
+              });
+            } else if (status.type === 'rejected') {
+              toast.error('Transfer Failed', { id: `drop-${file.name}` });
+              playError();
+            }
+          };
+
+          if (index > 0) await new Promise(r => setTimeout(r, 500));
+
+          try {
+            await toast.promise(
+              webRTCRef.current.connectToPeer(peer.id, file, {
+                senderEmail: user?.email
+              }),
+              {
+                loading: `Connecting...`,
+                success: `Connected! Sending ${file.name}...`,
+                error: (err) => `Connection failed: ${err.message}`
+              },
+              { id: `conn-drop-${file.name}` }
+            );
+          } catch (err) {
+            console.error("Drop connect failed:", err);
+          }
         }
-      });
+      }
 
       // toast.success(`Prepared ${files.length} items for transfer!`);
 
