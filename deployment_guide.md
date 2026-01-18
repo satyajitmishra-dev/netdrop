@@ -16,7 +16,7 @@ Since NetDrop uses **WebSockets** (for device discovery) and **Client-Side Encry
     *   **Name**: `netdrop-server` (or unique name).
     *   **Root Directory**: `server` (IMPORTANT: Don't leave blank).
     *   **Runtime**: Node.
-    *   **Build Command**: `npm install`.
+    *   **Build Command**: `npm run build` (This runs the new root script).
     *   **Start Command**: `npm start`.
     *   **Instance Type**: Free (or Starter if you want 24/7 uptime).
 5.  **Environment Variables**:
