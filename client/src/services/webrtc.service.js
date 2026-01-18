@@ -135,7 +135,8 @@ class WebRTCService {
             // Set a Safety Timeout (15s)
             setTimeout(() => {
                 if (this.connectReject && this.peerConnection?.connectionState !== 'connected') {
-                    this.connectReject(new Error("Connection Request Timed Out (15s)"));
+                    // More user-friendly error
+                    this.connectReject(new Error("Device unreachable. Ensure both devices are online."));
                     this.connectReject = null;
                     this.connectResolve = null;
                 }

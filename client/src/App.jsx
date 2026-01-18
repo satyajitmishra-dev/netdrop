@@ -264,7 +264,7 @@ function App() {
                 {
                   loading: `Connecting to ${getShortName(peer)}...`,
                   success: `Connected! Sending ${file.name}...`,
-                  error: (err) => `Connection failed: ${err.message}`
+                  error: (err) => err.message || 'Connection Failed'
                 },
                 { id: `conn-${file.name}` }
               );
@@ -349,7 +349,7 @@ function App() {
           {
             loading: 'Sending...',
             success: `Sent to ${getShortName(textModal.peer)}`,
-            error: (err) => `Failed: ${err.message || 'Connection Error'}`
+            error: (err) => err.message || 'Transmission Failed'
           }
         );
 
@@ -432,7 +432,7 @@ function App() {
               {
                 loading: `Connecting...`,
                 success: `Connected! Sending ${file.name}...`,
-                error: (err) => `Connection failed: ${err.message}`
+                error: (err) => err.message || 'Connection Failed'
               },
               { id: `conn-drop-${file.name}` }
             );
