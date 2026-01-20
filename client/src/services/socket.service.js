@@ -2,7 +2,10 @@ import { io } from "socket.io-client";
 
 // Production: Use Render backend. Development: Use localhost.
 const PRODUCTION_SERVER = "https://netdrop-server.onrender.com";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? PRODUCTION_SERVER : "http://localhost:5004");
+const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD
+    ? (isSecure ? PRODUCTION_SERVER.replace('http://', 'https://') : PRODUCTION_SERVER)
+    : "http://localhost:5004");
 
 class SocketService {
     constructor() {

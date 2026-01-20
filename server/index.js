@@ -23,6 +23,16 @@ const server = http.createServer(app);
 // Trust Proxy (Required for Production behind Nginx/Load Balancers)
 app.set("trust proxy", 1);
 
+// Force HTTPS Redirect (Production)
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (req.header('x-forwarded-proto') !== 'https') {
+            return res.redirect(`https://${req.header('host')}${req.url}`);
+        }
+        next();
+    });
+}
+
 // Allowed Origins (supports both www and non-www)
 const allowedOrigins = [
     process.env.CLIENT_URL,
