@@ -19,6 +19,8 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
             socketService.createPairCode((code) => {
                 setMyCode(code);
                 setIsLoading(false);
+                // Persist my own code too, so if I refresh I stay in my own room
+                localStorage.setItem('netdrop_room_code', code);
             });
         }
     }, [isOpen]);
@@ -34,6 +36,13 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
             const shortName = getShortName(peer);
 
             toast.success(`Connected to ${shortName} 🎉`, { duration: 3000 });
+
+            // Persist the active room code if we joined one
+            // (Note: Creator already saved it in create callback, Joiner needs to save it here or in join function)
+            if (inputCode.join('').length === 6) {
+                localStorage.setItem('netdrop_room_code', inputCode.join(''));
+            }
+
             onClose();
         };
 
@@ -72,6 +81,11 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
         if (digit && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
+
+        // Auto-Submit if filled
+        if (newCode.every(d => d !== '')) {
+            handleJoin(newCode.join(''));
+        }
     };
 
     const handleKeyDown = (index, e) => {
@@ -88,11 +102,16 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
             setInputCode(newCode.slice(0, 6));
             inputRefs.current[Math.min(paste.length, 5)]?.focus();
             e.preventDefault();
+
+            // Auto-Submit if filled
+            if (newCode.slice(0, 6).every(d => d !== '') && paste.length === 6) {
+                handleJoin(newCode.slice(0, 6).join(''));
+            }
         }
     };
 
-    const handleJoin = () => {
-        const code = inputCode.join('');
+    const handleJoin = (codeOverride) => {
+        const code = typeof codeOverride === 'string' ? codeOverride : inputCode.join('');
         if (code.length !== 6) {
             toast.error('Please enter a valid 6-digit code');
             return;
@@ -114,8 +133,10 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
 
         // Timeout to reset joining state if no response
         setTimeout(() => {
-            setIsJoining(false);
-            socket.off('pair-error', onError);
+            if (isJoining) { // Check if still joining to avoid race conditions
+                setIsJoining(false);
+                socket.off('pair-error', onError);
+            }
         }, 10000);
     };
 
@@ -247,7 +268,7 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleJoin}
+                                onClick={() => handleJoin()}
                                 disabled={enteredCode.length !== 6 || isJoining}
                                 className="flex-[1.5] py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >

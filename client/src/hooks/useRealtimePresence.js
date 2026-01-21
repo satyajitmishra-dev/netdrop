@@ -16,6 +16,17 @@ export const useRealtimePresence = (deviceInfo) => {
         const handleConnect = () => {
             if (!document.hidden) {
                 discoveryService.init(deviceInfo);
+
+                // Auto-rejoin persistent room if exists
+                const savedRoom = localStorage.getItem('netdrop_room_code');
+                if (savedRoom) {
+                    socket.emit('join-with-code', savedRoom);
+                    // We don't need to show a toast here, the server will send 'active-peers'
+                    // and 'pair-success' which will trigger UI updates if needed.
+                    // Or we could toast "Restored connection"
+                    toast("Restoring connection...", { icon: '🔄', duration: 2000 });
+                }
+
                 toast.success("Connected to NetDrop Network", {
                     id: 'netdrop-connect',
                     style: { background: '#0f172a', color: '#fff', border: '1px solid #2563EB' }

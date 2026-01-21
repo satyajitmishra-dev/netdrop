@@ -165,49 +165,94 @@ export class SignalingService {
                 }
             });
 
-            // --- Pairing Logic ---
+            // --- Pairing Logic (Unified with Rooms) ---
             socket.on('create-pair-code', () => {
                 // Generate 6-digit code
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
-                // Store code mapping (In-memory for MVP)
-                this.pairingCodes = this.pairingCodes || new Map();
-                this.pairingCodes.set(code, socket.id);
+
+                // Store as a Room
+                this.activeRooms = this.activeRooms || new Map();
+                this.activeRooms.set(code, {
+                    passcode: code,
+                    name: `Pairing-${code}`,
+                    owner: socket.id,
+                    created: Date.now(),
+                    isPairing: true // Flag to distinguish if needed
+                });
+
+                // Join the room immediately
+                const newRoom = `room:${code}`;
+                const oldRoom = room;
+
+                if (oldRoom !== newRoom) {
+                    socket.leave(oldRoom);
+                    socket.to(oldRoom).emit("peer-left", { id: socket.id });
+                    socket.join(newRoom);
+                    room = newRoom; // Update closure
+
+                    const currentUser = this.connectedUsers.get(socket.id);
+                    if (currentUser) {
+                        this.connectedUsers.set(socket.id, { ...currentUser, room: newRoom });
+                    }
+                }
 
                 socket.emit('pair-code-created', code);
 
-                // Auto-expire code after 5 mins
-                setTimeout(() => this.pairingCodes.delete(code), 5 * 60 * 1000);
+                // Auto-expire room after 30 mins (increased for persistence)
+                setTimeout(() => {
+                    if (this.activeRooms.has(code)) {
+                        this.activeRooms.delete(code);
+                    }
+                }, 30 * 60 * 1000);
             });
 
             socket.on('join-with-code', (rawCode) => {
                 const code = String(rawCode).trim();
 
-                if (!this.pairingCodes.has(code)) {
+                // Check active rooms first (Unified Logic)
+                const roomData = this.activeRooms?.get(code);
+
+                if (!roomData) {
                     socket.emit('pair-error', 'Invalid or expired code');
                     return;
                 }
 
-                const targetSocketId = this.pairingCodes.get(code);
-                const targetUser = this.connectedUsers.get(targetSocketId);
+                // specific check to prevent self-pairing loop if already in room?
+                // Actually, re-joining is fine, it just refreshes.
+
+                const newRoom = `room:${code}`;
+                const oldRoom = room;
+
+                socket.leave(oldRoom);
+                socket.to(oldRoom).emit("peer-left", { id: socket.id });
+                socket.join(newRoom);
+                room = newRoom; // Update closure
+
                 const currentUser = this.connectedUsers.get(socket.id);
+                if (currentUser) {
+                    this.connectedUsers.set(socket.id, { ...currentUser, room: newRoom });
 
-                if (targetSocketId === socket.id) {
-                    socket.emit('pair-error', 'Cannot pair with yourself');
-                    return;
-                }
+                    // Announce presence to the room
+                    socket.to(newRoom).emit("peer-presence", { ...currentUser, room: newRoom });
 
-                if (targetUser && currentUser) {
-                    // Success! Exchange details explicitly (ignoring rooms)
+                    // Get peers currently in the room
+                    const peersInRoom = Array.from(this.connectedUsers.values()).filter(
+                        (peer) => peer.room === newRoom && peer.id !== socket.id
+                    );
 
-                    // 1. Tell Target about Current
-                    this.io.to(targetSocketId).emit('peer-presence', currentUser);
-                    this.io.to(targetSocketId).emit('pair-success', { peer: currentUser });
+                    // Send success to self with peers
+                    socket.emit("active-peers", peersInRoom);
 
-                    // 2. Tell Current about Target
-                    socket.emit('peer-presence', targetUser);
-                    socket.emit('pair-success', { peer: targetUser });
-                } else {
-                    socket.emit('pair-error', 'Peer not found');
+                    // For UI compatibility: Send 'pair-success' to self
+                    // If peers exist, take the first one as "the peer" for the toast
+                    if (peersInRoom.length > 0) {
+                        socket.emit('pair-success', { peer: peersInRoom[0] });
+                        // Also notify the existing peers that pairing succeeded (optional, but good for UX)
+                        socket.to(newRoom).emit('pair-success', { peer: currentUser });
+                    } else {
+                        // Just joined, waiting for others
+                        socket.emit('pair-success', { peer: { name: 'Waiting for peer...' } });
+                    }
                 }
             });
 
