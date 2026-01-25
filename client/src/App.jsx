@@ -476,7 +476,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center bg-slate-950 overflow-x-hidden text-slate-200 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
       <Banner />
       <Toaster position="top-center" reverseOrder={false} toastOptions={{
         style: {

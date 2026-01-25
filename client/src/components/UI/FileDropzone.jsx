@@ -47,7 +47,7 @@ const FileDropzone = ({ files = [], onFileSelect, onRemoveFile, multiple = false
                             />
                             <div className="flex items-center justify-center gap-2 py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
                                 <Upload size={16} />
-                                <span>Add more files</span>
+                                <span>+ Add more</span>
                             </div>
                         </label>
 
@@ -72,9 +72,9 @@ const FileDropzone = ({ files = [], onFileSelect, onRemoveFile, multiple = false
                         </div>
                         <div className="text-center">
                             <p className="text-slate-200 text-sm md:text-base font-medium">
-                                {multiple ? 'Tap to choose files' : 'Tap to choose file'}
+                                Drop files here or tap to browse
                             </p>
-                            <p className="text-slate-500 text-xs mt-1">Max 50MB total • All file types supported</p>
+                            <p className="text-slate-500 text-xs mt-1">Up to 50MB • Any file type works</p>
                         </div>
                     </label>
                 )}

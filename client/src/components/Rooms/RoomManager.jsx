@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import { Users, LogOut, MessageSquare, FileText, ArrowRight, Shield, Plus, Key, Copy, Info, X } from 'lucide-react';
+import { Users, LogOut, MessageSquare, FileText, ArrowRight, Shield, Plus, Key, Copy, Info, X, Zap } from 'lucide-react';
 import { socketService } from '../../services/socket.service';
 import DiscoveryGrid from '../Transfer/DiscoveryGrid';
 import TextShareModal from '../Transfer/TextShareModal';
-import { setActiveTab } from '../../store/slices/transfer.slice';
 import { getShortName } from '../../utils/device';
+import GlassCard from '../UI/GlassCard';
+import PremiumButton from '../UI/PremiumButton';
+import Input from '../UI/Input';
 
 const RoomManager = ({ onPeerSelect }) => {
     const dispatch = useDispatch();
@@ -15,16 +17,16 @@ const RoomManager = ({ onPeerSelect }) => {
     // Local State
     const [mode, setMode] = useState('menu'); // 'menu' | 'create' | 'join' | 'active'
     const [roomName, setRoomName] = useState('');
-    const [passcode, setPasscode] = useState(''); // Input for join, Display for create
-    const [activeRoomInfo, setActiveRoomInfo] = useState(null); // { name, passcode }
-    const [isBusy, setIsBusy] = useState(false); // Loading state for async actions
+    const [passcode, setPasscode] = useState('');
+    const [activeRoomInfo, setActiveRoomInfo] = useState(null);
+    const [isBusy, setIsBusy] = useState(false);
 
     // Broadcast Text State
     const [textModalOpen, setTextModalOpen] = useState(false);
-    const [selectedPeer, setSelectedPeer] = useState(null); // For per-peer text sharing
-    const [textModalMode, setTextModalMode] = useState('broadcast'); // 'broadcast' | 'peer'
-    const [showTips, setShowTips] = useState(false); // Info popover state
-    const [showUsers, setShowUsers] = useState(false); // User list popover state
+    const [selectedPeer, setSelectedPeer] = useState(null);
+    const [textModalMode, setTextModalMode] = useState('broadcast');
+    const [showTips, setShowTips] = useState(false);
+    const [showUsers, setShowUsers] = useState(false);
 
     // Listen for incoming broadcast text
     useEffect(() => {
@@ -33,13 +35,13 @@ const RoomManager = ({ onPeerSelect }) => {
         const handleBroadcastText = (data) => {
             toast((t) => (
                 <div onClick={() => toast.dismiss(t.id)} className="cursor-pointer">
-                    <p className="font-bold text-blue-400 text-xs mb-1">📢 BROADCAST from {getShortName(data.sender)}</p>
+                    <p className="font-bold text-primary text-xs mb-1">📢 BROADCAST from {getShortName(data.sender)}</p>
                     <p className="text-white text-sm">{data.text}</p>
                 </div>
             ), {
                 icon: '💬',
                 duration: 6000,
-                style: { background: '#1e293b', color: '#fff', border: '1px solid #3b82f6' }
+                style: { background: '#020617', color: '#fff', border: '1px solid #0F52BA' }
             });
         };
 
@@ -55,7 +57,6 @@ const RoomManager = ({ onPeerSelect }) => {
         const socket = socketService.getSocket();
         if (!socket.connected) {
             toast.error("Waiting for connection...", { id: 'room-conn' });
-            // proceed anyway, socket.io buffers
         }
 
         setIsBusy(true);
@@ -97,7 +98,7 @@ const RoomManager = ({ onPeerSelect }) => {
             clearTimeout(safetyTimer);
             setIsBusy(false);
             if (response.success) {
-                setActiveRoomInfo({ name: response.roomName, passcode: code }); // We might not know passcode if we joined without logic check, but here we do
+                setActiveRoomInfo({ name: response.roomName, passcode: code });
                 setMode('active');
                 toast.success(`Joined Room: ${response.roomName}`);
             } else {
@@ -119,7 +120,6 @@ const RoomManager = ({ onPeerSelect }) => {
         if (mode !== 'active') return;
 
         if (textModalMode === 'peer' && selectedPeer) {
-            // Send to specific peer via WebRTC
             import('../../services/webrtc.service').then(({ webRTCService }) => {
                 webRTCService.connectToPeer(selectedPeer.id, {
                     type: 'text',
@@ -129,7 +129,6 @@ const RoomManager = ({ onPeerSelect }) => {
                 toast.success(`Sent to ${getShortName(selectedPeer)}`);
             });
         } else {
-            // Broadcast to room
             socketService.broadcastText(text, { ...myDevice, id: socketService.getSocket()?.id });
             toast.success("Message broadcasted to room!");
         }
@@ -180,249 +179,246 @@ const RoomManager = ({ onPeerSelect }) => {
 
     // --- Render Logic ---
 
+    // 1. Menu Mode
     if (mode === 'menu') {
         return (
-            <div className="w-full max-w-sm mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="text-center space-y-3">
-                    <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-2 border border-blue-500/20 shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)]">
-                        <Users size={32} className="text-blue-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Community Rooms</h2>
-                    <p className="text-slate-400 text-xs px-4 leading-relaxed">
-                        Join a private secure room to share files with a specific group.
-                    </p>
-                </div>
+            <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="w-full max-w-sm space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                    <GlassCard className="group py-10 px-8 hover:bg-white/[0.02] transition-all duration-300">
+                        <div className="text-center space-y-4">
+                            {/* Icon with hover effect */}
+                            <div className="relative inline-block group/icon cursor-pointer">
+                                <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full opacity-40 group-hover/icon:opacity-80 group-hover/icon:scale-110 transition-all duration-500" />
+                                <div className="relative w-20 h-20 bg-gradient-to-br from-primary/20 via-blue-500/10 to-primary/5 rounded-2xl flex items-center justify-center mx-auto ring-1 ring-primary/30 shadow-2xl shadow-primary/20 group-hover/icon:shadow-primary/40 group-hover/icon:ring-primary/50 group-hover/icon:scale-105 transition-all duration-300">
+                                    <Users size={36} className="text-primary group-hover/icon:scale-110 transition-transform duration-300" />
+                                </div>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">Secure Rooms</h2>
+                            <p className="text-text-muted text-sm leading-relaxed">
+                                Share files with a group using a private room code.
+                            </p>
+                        </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => setMode('create')}
-                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-blue-500/50 rounded-xl transition-all group active:scale-[0.98]"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Plus size={20} className="text-blue-400" />
+                        <div className="space-y-3 pt-6">
+                            <PremiumButton
+                                variant="primary"
+                                onClick={() => setMode('create')}
+                                className="w-full text-base py-4 h-auto shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group"
+                            >
+                                <Plus size={20} className="mr-2 group-hover:scale-110 transition-transform" />
+                                Create New Room
+                            </PremiumButton>
+
+                            <PremiumButton
+                                variant="glass"
+                                onClick={() => setMode('join')}
+                                className="w-full text-base py-4 h-auto hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group"
+                            >
+                                <Key size={20} className="mr-2 text-primary group-hover:scale-110 transition-transform" />
+                                Join with Code
+                            </PremiumButton>
                         </div>
-                        <span className="font-semibold text-sm text-slate-200 group-hover:text-white">Create Room</span>
-                    </button>
-                    <button
-                        onClick={() => setMode('join')}
-                        className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-emerald-500/50 rounded-xl transition-all group active:scale-[0.98]"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Key size={20} className="text-emerald-400" />
-                        </div>
-                        <span className="font-semibold text-sm text-slate-200 group-hover:text-white">Join Room</span>
-                    </button>
+                    </GlassCard>
+
+                    {/* Tips */}
+                    <div className="flex items-center justify-center gap-2 text-text-muted text-xs">
+                        <Shield size={12} className="text-emerald-500/70" />
+                        <span>Rooms are private and encrypted</span>
+                    </div>
                 </div>
             </div>
         );
     }
 
+    // 2. Create Mode
     if (mode === 'create') {
         return (
-            <div className="w-full max-w-md mx-auto duration-500 pt-10">
-                <button onClick={() => setMode('menu')} className="text-slate-400 hover:text-white mb-6 flex items-center gap-2 text-sm font-medium transition-colors">
-                    ← Back to Menu
-                </button>
-                <div className="space-y-4 bg-slate-900/40 p-8 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-                    <h3 className="text-xl font-bold text-white">Create New Room</h3>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Room Name</label>
-                        <input
-                            type="text"
-                            value={roomName}
-                            onChange={(e) => setRoomName(e.target.value)}
-                            placeholder="My Awesome Room"
-                            className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-base"
-                            autoFocus
-                        />
-                    </div>
-                    <button
-                        onClick={handleCreateRoom}
-                        disabled={!roomName.trim() || isBusy}
-                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2"
-                    >
-                        {isBusy ? "Creating..." : <>Generate Room <ArrowRight size={18} /></>}
+            <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+                    <button onClick={() => setMode('menu')} className="text-text-muted hover:text-white mb-6 flex items-center gap-2 text-sm font-medium transition-colors pl-1">
+                        ← Back
                     </button>
+                    <GlassCard className="group space-y-8 p-8 hover:bg-white/[0.02] transition-all duration-300">
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold text-white">Create a Room</h3>
+                            <p className="text-text-muted text-sm">Give it a name so others can recognize it.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <Input
+                                label="Room Name"
+                                value={roomName}
+                                onChange={(e) => setRoomName(e.target.value)}
+                                placeholder="e.g. Design Team, Project Alpha"
+                                autoFocus
+                            />
+                        </div>
+
+                        <PremiumButton
+                            variant="primary"
+                            onClick={handleCreateRoom}
+                            disabled={!roomName.trim() || isBusy}
+                            className="w-full py-3.5 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 mt-2"
+                        >
+                            {isBusy ? "Creating..." : <>Create Room <ArrowRight size={18} className="ml-2" /></>}
+                        </PremiumButton>
+
+                        <p className="text-center text-xs text-text-muted">
+                            You'll get a 6-digit code to share with others.
+                        </p>
+                    </GlassCard>
                 </div>
             </div>
         );
     }
 
+    // 3. Join Mode
     if (mode === 'join') {
         return (
-            <div className="w-full max-w-md mx-auto duration-500 pt-10">
-                <button onClick={() => setMode('menu')} className="text-slate-400 hover:text-white mb-6 flex items-center gap-2 text-sm font-medium transition-colors">
-                    ← Back to Menu
-                </button>
-                <div className="space-y-4 bg-slate-900/40 p-8 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-                    <h3 className="text-xl font-bold text-white">Join Existing Room</h3>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Room Passcode</label>
-                        <input
-                            type="text"
-                            value={passcode}
-                            onChange={(e) => setPasscode(e.target.value.toUpperCase())}
-                            placeholder="A1B2C3"
-                            maxLength={6}
-                            className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-center tracking-widest text-xl uppercase"
-                            autoFocus
-                        />
-                    </div>
-                    <button
-                        onClick={handleJoinRoom}
-                        disabled={passcode.length < 6 || isBusy}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 mt-2"
-                    >
-                        {isBusy ? "Joining..." : <>Enter Room <ArrowRight size={18} /></>}
+            <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+                    <button onClick={() => setMode('menu')} className="text-text-muted hover:text-white mb-6 flex items-center gap-2 text-sm font-medium transition-colors pl-1">
+                        ← Back
                     </button>
+                    <GlassCard className="group space-y-8 p-8 hover:bg-white/[0.02] transition-all duration-300">
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold text-white">Join a Room</h3>
+                            <p className="text-text-muted text-sm">Enter the code shared by the room creator.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <Input
+                                label="Room Code"
+                                value={passcode}
+                                onChange={(e) => setPasscode(e.target.value.toUpperCase())}
+                                placeholder="ABC123"
+                                maxLength={6}
+                                className="font-mono text-center tracking-[0.3em] text-2xl uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-base h-14"
+                                autoFocus
+                            />
+                        </div>
+
+                        <PremiumButton
+                            variant="primary"
+                            onClick={handleJoinRoom}
+                            disabled={passcode.length < 6 || isBusy}
+                            className="w-full py-3.5 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 mt-2"
+                        >
+                            {isBusy ? "Joining..." : <>Join Room <ArrowRight size={18} className="ml-2" /></>}
+                        </PremiumButton>
+
+                        <p className="text-center text-xs text-text-muted">
+                            Ask the room creator for the 6-digit code.
+                        </p>
+                    </GlassCard>
                 </div>
             </div>
         );
     }
 
-    // Active Room View
+    // 4. Active Room View
     return (
         <div className="w-full h-full flex flex-col">
-            {/* Room Header - Centered premium design */}
-            <div className="w-full max-w-lg mx-auto px-4 py-4 text-center space-y-3">
-                {/* Room Info */}
-                <div className="inline-flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
-                        <Users size={22} className="text-blue-400" />
+            {/* Room Header */}
+            <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+                        <Users size={16} />
+                        Connected
                     </div>
-                    <h2 className="text-lg font-bold text-white">{activeRoomInfo?.name}</h2>
+                    <h2 className="text-2xl font-bold text-white">{activeRoomInfo?.name}</h2>
                 </div>
 
-                {/* Room Code with Copy */}
-                <div className="flex items-center justify-center gap-3">
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(activeRoomInfo?.passcode);
-                            toast.success('Room code copied!');
-                        }}
-                        className="inline-flex items-center gap-2 font-mono text-sm font-bold text-blue-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-800 transition-all active:scale-95"
-                    >
-                        {activeRoomInfo?.passcode}
-                        <Copy size={14} className="text-slate-400" />
-                    </button>
-
-                    {/* User Count Badge */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowUsers(!showUsers)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all active:scale-95 ${peers.length > 0
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                                : 'bg-slate-800/60 text-slate-400 border border-slate-700/50 hover:bg-slate-800'
-                                }`}
+                {/* Controls Bar */}
+                <GlassCard className="p-3 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        {/* Passcode Chip */}
+                        <div
+                            className="flex items-center gap-3 px-4 py-2 bg-slate-900/50 rounded-xl border border-white/5 cursor-pointer hover:bg-slate-900/80 transition-colors group"
+                            onClick={() => {
+                                navigator.clipboard.writeText(activeRoomInfo?.passcode);
+                                toast.success('Room code copied!');
+                            }}
+                            title="Click to copy"
                         >
-                            <Users size={14} />
-                            {peers.length}
-                        </button>
+                            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Code</span>
+                            <span className="font-mono text-lg font-bold text-white tracking-widest group-hover:text-primary transition-colors">{activeRoomInfo?.passcode}</span>
+                            <Copy size={14} className="text-text-muted group-hover:text-white" />
+                        </div>
 
-                        {/* Users Popover */}
-                        {showUsers && (
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 animate-in fade-in zoom-in-95 duration-200 z-50 shadow-xl">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-slate-300">In Room</span>
-                                    <button onClick={() => setShowUsers(false)} className="text-slate-500 hover:text-white p-1 rounded hover:bg-slate-700/50">
-                                        <X size={12} />
-                                    </button>
-                                </div>
-                                <ul className="space-y-1.5 max-h-40 overflow-y-auto">
-                                    {peers.length === 0 ? (
-                                        <li className="text-xs text-slate-500 px-2 py-1.5">No one else yet</li>
-                                    ) : (
-                                        peers.map((peer) => (
-                                            <li key={peer.id} className="flex items-center gap-2 text-xs text-slate-300 px-2 py-1.5 rounded-lg hover:bg-slate-700/50">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                {getShortName(peer)}
-                                            </li>
-                                        ))
-                                    )}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-center gap-2 pt-1">
-                    <button
-                        onClick={() => setTextModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 text-white rounded-xl text-sm font-semibold transition-all border border-slate-700/50 hover:border-blue-500/30 active:scale-95"
-                    >
-                        <MessageSquare size={15} className="text-blue-400" />
-                        <span>Broadcast</span>
-                    </button>
-                    <button
-                        onClick={handleBroadcastFile}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 text-white rounded-xl text-sm font-semibold transition-all border border-slate-700/50 hover:border-emerald-500/30 active:scale-95"
-                    >
-                        <FileText size={15} className="text-emerald-400" />
-                        <span>Send File</span>
-                    </button>
-                    <button
-                        onClick={handleLeave}
-                        className="flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all border border-red-500/20 active:scale-95"
-                        title="Leave Room"
-                    >
-                        <LogOut size={15} />
-                    </button>
-                </div>
-
-                {/* Waiting State - Always show */}
-                <div className="pt-4 pb-4 animate-in fade-in duration-500">
-                    <div className="flex flex-col items-center gap-4">
-                        {/* Pulsing radar effect */}
+                        {/* User Count */}
                         <div className="relative">
-                            <div className="absolute inset-0 w-16 h-16 bg-blue-500/20 rounded-full animate-ping" />
-                            <div className="absolute inset-2 w-12 h-12 bg-blue-500/10 rounded-full animate-pulse" />
-                            <div className="relative w-16 h-16 bg-slate-800/60 rounded-full flex items-center justify-center border border-slate-700/50">
-                                <Users size={24} className="text-slate-400" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <p className="text-slate-400 text-sm">Waiting for others to join...</p>
                             <button
-                                onClick={() => setShowTips(!showTips)}
-                                className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-all"
-                                title="Room Info"
+                                onClick={() => setShowUsers(!showUsers)}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border ${peers.length > 0
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                                    : 'bg-white/5 text-text-muted border-transparent hover:bg-white/10'
+                                    }`}
                             >
-                                <Info size={16} />
+                                <Users size={16} />
+                                {peers.length}
                             </button>
-                        </div>
-
-                        {/* Info Popover */}
-                        {showTips && (
-                            <div className="w-full max-w-xs bg-slate-800/80 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Room Tips</span>
-                                    <button onClick={() => setShowTips(false)} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700/50 transition-colors">
-                                        <X size={14} />
-                                    </button>
+                            {/* Users Popover */}
+                            {showUsers && (
+                                <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800 rounded-xl border border-slate-700 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="px-2 py-1 flex justify-between items-center border-b border-white/5 mb-1 pb-1">
+                                        <span className="text-xs font-bold text-white">Users</span>
+                                        <X size={12} className="cursor-pointer text-text-muted hover:text-white" onClick={() => setShowUsers(false)} />
+                                    </div>
+                                    <ul className="max-h-40 overflow-y-auto">
+                                        {peers.length === 0 ? (
+                                            <li className="text-xs text-text-muted px-2 py-1">Nothing here...</li>
+                                        ) : (
+                                            peers.map(p => (
+                                                <li key={p.id} className="text-xs text-white px-2 py-1 flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                    {getShortName(p)}
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
                                 </div>
-                                <ul className="space-y-2 text-xs text-slate-400">
-                                    <li className="flex items-start gap-2">
-                                        <Copy size={12} className="text-blue-400 mt-0.5 shrink-0" />
-                                        Share the room code with others
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <Shield size={12} className="text-emerald-400 mt-0.5 shrink-0" />
-                                        All transfers are end-to-end encrypted
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <Info size={12} className="text-amber-400 mt-0.5 shrink-0" />
-                                        Don't close this tab to keep room active
-                                    </li>
-                                </ul>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                        <PremiumButton variant="glass" onClick={() => setTextModalOpen(true)} className="px-3 py-2 text-xs h-auto">
+                            <MessageSquare size={16} className="text-primary mr-2" />
+                            Send Message
+                        </PremiumButton>
+                        <PremiumButton variant="glass" onClick={handleBroadcastFile} className="px-3 py-2 text-xs h-auto">
+                            <Zap size={16} className="text-emerald-400 mr-2" />
+                            Send File
+                        </PremiumButton>
+                        <button
+                            onClick={handleLeave}
+                            className="p-2.5 text-error hover:bg-error/10 rounded-xl transition-colors"
+                            title="Leave Room"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    </div>
+                </GlassCard>
             </div>
 
-            {/* Peer Grid when peers exist */}
+            {/* Waiting State (Empty) */}
+            {peers.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center -mt-20">
+                    <div className="relative">
+                        <div className="absolute inset-0 w-24 h-24 bg-primary/20 rounded-full animate-ping" />
+                        <div className="absolute inset-4 w-16 h-16 bg-primary/10 rounded-full animate-pulse" />
+                        <div className="relative w-24 h-24 bg-surface/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-2xl">
+                            <Users size={32} className="text-white/50" />
+                        </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mt-8">Waiting for people to join...</h3>
+                    <p className="text-text-muted text-sm mt-2 mb-6">Share the code <span className="text-white font-mono font-bold tracking-widest">{activeRoomInfo?.passcode}</span> to connect</p>
+                </div>
+            )}
+
+            {/* Peer Grid */}
             {peers.length > 0 && (
                 <div className="flex-1 w-full overflow-hidden relative">
                     <div className="absolute inset-0 overflow-y-auto pb-20 scrollbar-hide">

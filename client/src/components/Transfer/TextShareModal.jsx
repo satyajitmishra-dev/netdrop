@@ -1,29 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Copy, Send, Type, Clipboard } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import Modal from '../UI/Modal';
+import PremiumButton from '../UI/PremiumButton';
+import { cn } from '../../utils/cn';
 
 const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onSend, onSendClipboard }) => {
     const [text, setText] = useState(initialText);
+    const textareaRef = useRef(null);
 
     useEffect(() => {
         setText(initialText);
     }, [initialText]);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 300) + 'px';
+        }
+    }, [text, isOpen]);
+
     const handleCopy = () => {
         navigator.clipboard.writeText(text);
         toast.success('Copied to clipboard 🥳');
-        // Auto-close modal after brief delay to show toast
         setTimeout(() => onClose(), 500);
     };
 
     const handlePaste = async () => {
         try {
             const clipboardText = await navigator.clipboard.readText();
-            setText(clipboardText);
-            toast.success('Pasted from clipboard');
+            if (clipboardText) {
+                const newText = text ? text + '\n' + clipboardText : clipboardText;
+                setText(newText);
+                toast.success('Pasted from clipboard');
+            } else {
+                toast('Clipboard is empty', { icon: '⚠️' });
+            }
         } catch (err) {
-            toast.error('Could not access clipboard');
+            console.error('Paste failed:', err);
+            toast.error('Failed to read clipboard');
         }
     };
 
@@ -36,125 +52,112 @@ const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onS
     };
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={null}
+            showCloseButton={false}
+            maxWidth="max-w-md"
+            className="border border-white/10 shadow-2xl bg-black/60 backdrop-blur-xl" // Override styles
+        >
+            <div className="flex flex-col relative">
+                {/* sleek close button */}
+                <button
                     onClick={onClose}
+                    className="absolute -top-2 -right-2 p-2 text-text-muted hover:text-white transition-colors z-10"
                 >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                        className="w-full max-w-md bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="bg-slate-800/50 px-5 py-4 flex items-center justify-between border-b border-slate-700/50">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20 flex items-center justify-center">
-                                    <Type size={18} className="text-blue-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-white">{mode === 'send' ? 'Compose Message' : 'Received Text'}</h3>
-                                    <p className="text-xs text-slate-400 mt-0.5">{mode === 'send' ? `To: ${peerName}` : `From: ${peerName}`}</p>
-                                </div>
-                            </div>
+                    <X size={16} />
+                </button>
+
+                {/* Header - Minimal */}
+                <div className="flex items-center gap-3 mb-4">
+                    <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shadow-lg",
+                        mode === 'send' ? "bg-primary/20 text-primary shadow-primary/10" : "bg-success/20 text-success shadow-success/10"
+                    )}>
+                        <Type size={16} strokeWidth={2.5} />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                            {mode === 'send' ? 'TO' : 'FROM'}
+                        </span>
+                        <span className="text-sm font-bold text-white tracking-wide">
+                            {peerName}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Content Area - Auto Growing */}
+                <div className="relative group">
+                    {mode === 'send' && (
+                        <button
+                            onClick={handlePaste}
+                            className="absolute top-2 right-2 p-1.5 bg-white/5 hover:bg-white/10 rounded-md text-text-muted hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10 scale-90"
+                            title="Paste"
+                        >
+                            <Clipboard size={14} />
+                        </button>
+                    )}
+
+                    {mode === 'send' ? (
+                        <textarea
+                            ref={textareaRef}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Type something here..."
+                            rows={1}
+                            className="w-full min-h-[60px] max-h-[300px] bg-white/5 hover:bg-white/[0.07] focus:bg-black/40 border border-white/5 focus:border-primary/50 rounded-xl px-4 py-3 pr-10 text-white placeholder-text-muted/40 focus:outline-none resize-none text-sm transition-all shadow-inner leading-relaxed"
+                            autoFocus
+                        />
+                    ) : (
+                        <div className="w-full min-h-[60px] max-h-[300px] bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap selection:bg-primary/30 shadow-inner">
+                            {text}
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions Footer - Quick Actions */}
+                <div className="flex items-center justify-between gap-3 mt-4">
+                    {mode === 'send' ? (
+                        <>
                             <button
-                                onClick={onClose}
-                                className="text-slate-400 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all active:scale-95"
+                                onClick={() => { onSendClipboard(); onClose(); }}
+                                className="text-[10px] font-semibold text-text-muted hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-white/5"
                             >
-                                <X size={18} />
+                                <Clipboard size={12} />
+                                <span>Paste Clipboard</span>
                             </button>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-5">
-                            {mode === 'send' ? (
-                                <div className="relative">
-                                    {/* Paste button */}
-                                    <button
-                                        onClick={handlePaste}
-                                        className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-all z-10"
-                                        title="Paste from clipboard"
-                                    >
-                                        <Clipboard size={14} />
-                                    </button>
-                                    <textarea
-                                        value={text}
-                                        onChange={(e) => {
-                                            setText(e.target.value);
-                                            // Auto-resize
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = Math.min(e.target.scrollHeight, 300) + 'px';
-                                        }}
-                                        placeholder="Type your message here..."
-                                        rows={3}
-                                        className="w-full min-h-[80px] max-h-[300px] bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none text-sm leading-relaxed transition-all"
-                                        autoFocus
-                                        style={{ overflow: 'hidden' }}
-                                    />
-                                    <div className="absolute bottom-3 right-4 text-[10px] text-slate-500 font-medium">
-                                        {text.length} chars
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="w-full min-h-[80px] max-h-[300px] bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap selection:bg-blue-500/30">
-                                    {text}
-                                </div>
-                            )}
-                        </div>
+                            <PremiumButton
+                                variant="primary"
+                                onClick={handleSubmit}
+                                disabled={!text.trim()}
+                                className="px-6 py-2 h-9 text-xs rounded-lg shadow-lg shadow-primary/20"
+                            >
+                                Share <Send size={12} className="ml-2" />
+                            </PremiumButton>
+                        </>
+                    ) : (
+                        <button
+                            onClick={onClose}
+                            className="text-xs font-semibold text-text-muted hover:text-white transition-colors px-3 py-2"
+                        >
+                            Close
+                        </button>
+                    )}
 
-                        {/* Footer */}
-                        <div className="px-5 pb-5 flex gap-3">
-                            {mode === 'send' ? (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            onSendClipboard();
-                                            onClose();
-                                        }}
-                                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border border-slate-700/50 flex items-center justify-center gap-2"
-                                        title="Send current clipboard content immediately"
-                                    >
-                                        <Clipboard size={16} /> Send Clipboard
-                                    </button>
-
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={!text.trim()}
-                                        className="flex-[1.5] py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                                    >
-                                        <Send size={16} /> Send Text
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={onClose}
-                                        className="flex-1 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border border-slate-700/50"
-                                    >
-                                        Close
-                                    </button>
-
-                                    <button
-                                        onClick={handleCopy}
-                                        className="flex-[1.5] py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20 active:scale-[0.98]"
-                                    >
-                                        <Copy size={16} /> Copy
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                    {mode === 'receive' && (
+                        <PremiumButton
+                            variant="primary"
+                            onClick={handleCopy}
+                            className="px-6 py-2 h-9 text-xs rounded-lg shadow-lg shadow-primary/20"
+                        >
+                            Copy <Copy size={12} className="ml-2" />
+                        </PremiumButton>
+                    )}
+                </div>
+            </div>
+        </Modal>
     );
 };
 

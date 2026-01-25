@@ -9,6 +9,8 @@ import FileDropzone from '../UI/FileDropzone';
 import PasscodeInput from '../UI/PasscodeInput';
 import UploadProgress from '../UI/UploadProgress';
 import UploadSuccess from '../UI/UploadSuccess';
+import GlassCard from '../UI/GlassCard';
+import PremiumButton from '../UI/PremiumButton';
 
 const RemoteUpload = () => {
     const [files, setFiles] = useState([]);
@@ -142,7 +144,7 @@ const RemoteUpload = () => {
         } catch (error) {
             console.error(error);
             setStatus('idle');
-            toast.error("Upload failed. Check console.");
+            toast.error("Upload failed. Please try again.");
         }
     };
 
@@ -164,64 +166,67 @@ const RemoteUpload = () => {
             case 'zipping': return 'Bundling files...';
             case 'encrypting': return 'Encrypting...';
             case 'uploading': return 'Uploading...';
-            default: return 'Processing...';
+            default: return 'Working on it...';
         }
     };
 
     return (
-        <div className="w-full max-w-md mx-auto space-y-5 px-4 md:px-0">
-            <VaultHeader />
+        <div className="w-full max-w-md mx-auto px-4 md:px-0">
+            <GlassCard className="space-y-6 p-6 md:p-8">
+                <VaultHeader />
 
-            {status === 'idle' && (
-                <div className="space-y-4">
-                    <FileDropzone
-                        files={files}
-                        onFileSelect={handleFileSelect}
-                        onRemoveFile={handleRemoveFile}
-                        multiple={true}
-                    />
-                    <PasscodeInput
-                        value={passcode}
-                        onChange={(e) => setPasscode(e.target.value)}
-                    />
-                    <button
-                        onClick={handleUpload}
-                        disabled={files.length === 0}
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 text-white font-bold py-3.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 disabled:shadow-none active:scale-[0.98]"
-                    >
-                        <Lock size={18} />
-                        {files.length > 1 ? (
-                            <>Bundle & Encrypt ({files.length} files)</>
-                        ) : (
-                            <>Encrypt & Upload</>
+                {status === 'idle' && (
+                    <div className="space-y-5">
+                        <FileDropzone
+                            files={files}
+                            onFileSelect={handleFileSelect}
+                            onRemoveFile={handleRemoveFile}
+                            multiple={true}
+                        />
+                        <PasscodeInput
+                            value={passcode}
+                            onChange={(e) => setPasscode(e.target.value)}
+                        />
+                        <PremiumButton
+                            onClick={handleUpload}
+                            disabled={files.length === 0}
+                            variant="primary"
+                            className="w-full py-3.5 flex items-center justify-center gap-2.5 shadow-lg shadow-primary/20"
+                        >
+                            <Lock size={18} />
+                            {files.length > 1 ? (
+                                <>Encrypt & Send ({files.length} files)</>
+                            ) : (
+                                <>Secure Upload</>
+                            )}
+                        </PremiumButton>
+
+                        {files.length > 1 && (
+                            <p className="text-center text-xs text-text-muted">
+                                <Package size={12} className="inline mr-1" />
+                                Files will be zipped together.
+                            </p>
                         )}
-                    </button>
+                    </div>
+                )}
 
-                    {files.length > 1 && (
-                        <p className="text-center text-xs text-slate-500">
-                            <Package size={12} className="inline mr-1" />
-                            Files will be bundled into a single ZIP with one download link
-                        </p>
-                    )}
-                </div>
-            )}
+                {(status === 'zipping' || status === 'encrypting' || status === 'uploading') && (
+                    <div className="space-y-3">
+                        <UploadProgress status={status} progress={progress} />
+                        <p className="text-center text-sm text-text-muted">{getStatusLabel()}</p>
+                    </div>
+                )}
 
-            {(status === 'zipping' || status === 'encrypting' || status === 'uploading') && (
-                <div className="space-y-3">
-                    <UploadProgress status={status} progress={progress} />
-                    <p className="text-center text-sm text-slate-400">{getStatusLabel()}</p>
-                </div>
-            )}
-
-            {status === 'success' && (
-                <UploadSuccess
-                    shareLink={shareLink}
-                    passcode={passcode}
-                    onCopy={copyToClipboard}
-                    onReset={resetUpload}
-                    fileCount={files.length}
-                />
-            )}
+                {status === 'success' && (
+                    <UploadSuccess
+                        shareLink={shareLink}
+                        passcode={passcode}
+                        onCopy={copyToClipboard}
+                        onReset={resetUpload}
+                        fileCount={files.length}
+                    />
+                )}
+            </GlassCard>
         </div>
     );
 };
