@@ -37,7 +37,7 @@ import ProfileModal from './components/Auth/ProfileModal';
 
 function App() {
   const dispatch = useDispatch();
-  const { addToHistory } = useHistory();
+  const { addToHistory, isEnabled: isHistoryEnabled } = useHistory();
   const { playSuccess, playError, playPop } = useSound();
   const { activeTab, peers } = useSelector((state) => state.transfer);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -533,6 +533,16 @@ function App() {
         onDecline={() => {
           webRTCRef.current.rejectFileTransfer();
           setIncomingRequest({ isOpen: false, request: null });
+
+          if (!isHistoryEnabled) {
+            toast('File NOT saved. History is off.', {
+              icon: '⚠️',
+              style: {
+                background: '#334155', // Slate-700
+                color: '#fff',
+              }
+            });
+          }
         }}
       />
 

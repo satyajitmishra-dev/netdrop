@@ -267,7 +267,7 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.2 + i * 0.03 }}
                                             className={`w-10 h-12 md:w-11 md:h-14 rounded-xl text-center text-xl font-bold transition-all focus:outline-none ${digit
-                                                ? 'border-primary/50 text-white ring-2 ring-primary/20'
+                                                ? 'bg-slate-800/80 border-primary/50 text-white ring-2 ring-primary/20'
                                                 : 'bg-slate-800/50 border-slate-700/50 text-white'
                                                 } border focus:border-primary focus:ring-2 focus:ring-primary/30`}
                                         />

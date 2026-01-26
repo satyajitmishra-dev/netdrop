@@ -30,14 +30,30 @@ remoteConfig.defaultConfig = {
     banner_text: "",
     banner_link: "",
     banner_type: "info",
-    banner_detail: `<div style="padding: 20px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 82, 186, 0.1) 100%); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); font-family: sans-serif;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-        <div style="background: rgba(15, 82, 186, 0.3); padding: 8px; border-radius: 10px; color: #fff;">✨</div>
-        <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">Redesigned Experience</h3>
+    banner_detail: `<div style="padding: 24px; background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 82, 186, 0.15) 100%); border-radius: 20px; border: 1px solid rgba(15, 82, 186, 0.3); font-family: 'Inter', system-ui, sans-serif; box-shadow: 0 0 40px -10px rgba(15, 82, 186, 0.2);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <div style="background: linear-gradient(135deg, rgba(15, 82, 186, 0.4), rgba(15, 82, 186, 0.1)); padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 18px;">💎</span>
+        </div>
+        <div>
+           <h3 style="margin: 0; color: #fff; font-size: 18px; font-weight: 700; letter-spacing: -0.5px;">Premium Update</h3>
+           <span style="font-size: 12px; color: rgba(148, 163, 184, 0.8); text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">v1.2.16</span>
+        </div>
       </div>
-      <p style="margin: 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-        Connect devices faster than ever with our new <b style="color: #60a5fa;">6-digit smart codes</b>. Now featuring a cleaner interface and direct paste support!
+      <p style="margin: 0 0 16px 0; color: #e2e8f0; font-size: 15px; line-height: 1.6;">
+        Experience the new <b style="color: rgb(96, 165, 250);">Glassmorphism Design</b> with our signature Royal Blue theme.
       </p>
+      <ul style="margin: 0; padding: 0; list-style: none;">
+        <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: #cbd5e1; font-size: 14px;">
+           <span style="color: rgb(52, 211, 153);">✓</span> New 6-digit smart codes
+        </li>
+        <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: #cbd5e1; font-size: 14px;">
+           <span style="color: rgb(52, 211, 153);">✓</span> Enhanced Cloud Vault visibility
+        </li>
+        <li style="display: flex; align-items: center; gap: 10px; color: #cbd5e1; font-size: 14px;">
+           <span style="color: rgb(52, 211, 153);">✓</span> Faster P2P connection speeds
+        </li>
+      </ul>
     </div>`, // HTML/Text for popup details
     feature_list: JSON.stringify([
         { icon: "Zap", title: "P2P Transfer", desc: "Direct device-to-device", color: "from-amber-500 to-orange-600" },

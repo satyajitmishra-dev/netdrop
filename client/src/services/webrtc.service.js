@@ -3,13 +3,15 @@ import { socketService } from "./socket.service";
 
 const RTC_CONFIG = {
     iceServers: [
-        // STUN servers (for discovering public IP)
+        // STUN servers (Google - Robust & Reliable)
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
 
-        // Free TURN servers for mobile NAT traversal (metered.ca free tier)
+        // Metered.ca TURN servers
+        // Note: Free tier credentials may expire or hit limits.
+        // If connection fails, consider hosting a dedicated TURN server (e.g. Coturn).
         {
             urls: "turn:a.relay.metered.ca:80",
             username: "e8dd65c92f6d2067c9a89e4c",
@@ -27,6 +29,8 @@ const RTC_CONFIG = {
         }
     ],
     iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle', // Optimizes connection usage
+    iceTransportPolicy: 'all',  // Ensure we don't force relay
 };
 
 class WebRTCService {
@@ -34,7 +38,7 @@ class WebRTCService {
         this.peerConnection = null;
         this.dataChannel = null;
         this.onDataReceived = null;
-        this.onSendProgress = null; // Add explicitly for robust feedback
+        this.onSendProgress = null;
         this.targetPeerId = null;
 
         // File Transfer State
@@ -91,7 +95,7 @@ class WebRTCService {
                             this.sendData(JSON.stringify(payload));
                         }
                     }
-                    resolve(); // Resolved immediately as channel is open
+                    resolve();
                 } catch (e) {
                     reject(e);
                 }
@@ -129,18 +133,26 @@ class WebRTCService {
                 })
                 .catch(err => {
                     console.error("Error creating offer:", err);
-                    if (this.connectReject) this.connectReject(err);
+                    if (this.connectReject) {
+                        this.connectReject(err);
+                        this.connectReject = null;
+                    }
                 });
 
-            // Set a Safety Timeout (15s)
+            // Set a Safety Timeout (30s) - Increased for mobile/cross-network
             setTimeout(() => {
                 if (this.connectReject && this.peerConnection?.connectionState !== 'connected') {
-                    // More user-friendly error
-                    this.connectReject(new Error("Device unreachable. Ensure both devices are online."));
+                    this.connectReject(new Error("Device unreachable. Timeout (30s). Check network/firewall."));
                     this.connectReject = null;
                     this.connectResolve = null;
+
+                    // Clean up if failed
+                    if (this.peerConnection) {
+                        this.peerConnection.close();
+                        this.peerConnection = null;
+                    }
                 }
-            }, 15000);
+            }, 30000);
         });
     }
 
@@ -230,7 +242,15 @@ class WebRTCService {
 
             this.peerConnection.oniceconnectionstatechange = () => {
                 const state = this.peerConnection.iceConnectionState;
-                if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+                /* console.log(`ICE State: ${state}`); */
+
+                if (state === 'failed' || state === 'disconnected') {
+                    // Fail fast
+                    if (this.connectReject) {
+                        this.connectReject(new Error("Connection Failed (ICE " + state + ")"));
+                        this.connectReject = null;
+                        this.connectResolve = null;
+                    }
                     // Notify App.jsx to stop spinner
                     if (this.onSendProgress) {
                         this.onSendProgress({ type: 'rejected', error: 'Connection lost (Check Firewall/NAT)' });
