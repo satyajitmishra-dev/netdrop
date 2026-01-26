@@ -8,25 +8,6 @@ const RTC_CONFIG = {
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
-
-        // Metered.ca TURN servers
-        // Note: Free tier credentials may expire or hit limits.
-        // If connection fails, consider hosting a dedicated TURN server (e.g. Coturn).
-        {
-            urls: "turn:a.relay.metered.ca:80",
-            username: "e8dd65c92f6d2067c9a89e4c",
-            credential: "uWdWNmkhvyqVmUFO"
-        },
-        {
-            urls: "turn:a.relay.metered.ca:443",
-            username: "e8dd65c92f6d2067c9a89e4c",
-            credential: "uWdWNmkhvyqVmUFO"
-        },
-        {
-            urls: "turn:a.relay.metered.ca:443?transport=tcp",
-            username: "e8dd65c92f6d2067c9a89e4c",
-            credential: "uWdWNmkhvyqVmUFO"
-        }
     ],
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle', // Optimizes connection usage
@@ -142,7 +123,7 @@ class WebRTCService {
             // Set a Safety Timeout (30s) - Increased for mobile/cross-network
             setTimeout(() => {
                 if (this.connectReject && this.peerConnection?.connectionState !== 'connected') {
-                    this.connectReject(new Error("Device unreachable. Timeout (30s). Check network/firewall."));
+                    this.connectReject(new Error("Connection Timed Out. If on different networks (5G/WiFi), you may need a TURN server."));
                     this.connectReject = null;
                     this.connectResolve = null;
 
