@@ -1,11 +1,12 @@
 import React from 'react';
 import { useHistory } from '../../context/HistoryContext';
-import { ArrowDown, ArrowUp, File, Download, Trash2, Clock, FileText, Clipboard, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, File, Download, Trash2, Clock, FileText, Clipboard, Search, Copy, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import SimpleTable from '../UI/SimpleTable';
 import { cn } from '../../utils/cn';
 
 const HistoryView = () => {
-    const { history, clearHistory, downloadFile } = useHistory();
+    const { history, clearHistory, downloadFile, isEnabled, toggleHistory } = useHistory();
     const [searchTerm, setSearchTerm] = React.useState('');
 
     const formatTime = (ts) => {
@@ -19,6 +20,21 @@ const HistoryView = () => {
             case 'clipboard': return <Clipboard size={16} />;
             default: return <File size={16} />;
         }
+    };
+
+    const handleCopy = (text) => {
+        navigator.clipboard.writeText(text);
+        toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex items-center gap-3 bg-[#0a0a0f]/90 border border-white/10 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-2xl`}>
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <Check size={16} strokeWidth={3} />
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-white">Copied!</p>
+                    <p className="text-xs text-slate-400">Content copied to clipboard</p>
+                </div>
+            </div>
+        ));
     };
 
     const filteredHistory = history.filter(item =>
@@ -37,9 +53,24 @@ const HistoryView = () => {
     const emptyState = (
         <tr>
             <td colSpan="5" className="p-12 text-center text-text-muted">
-                <div className="flex flex-col items-center justify-center gap-3 opacity-60">
+                <div className="flex flex-col items-center justify-center gap-4 opacity-60">
                     <Clock size={48} strokeWidth={1} />
-                    <p className="text-sm">No activity found</p>
+                    {isEnabled ? (
+                        <p className="text-sm">No activity found</p>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2">
+                            <p className="text-sm font-medium">History Recording is Paused</p>
+                            <p className="text-xs text-text-muted max-w-xs mx-auto">
+                                Enable history to track your incoming and outgoing file transfers automatically.
+                            </p>
+                            <button
+                                onClick={toggleHistory}
+                                className="mt-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/25 transition-all active:scale-95"
+                            >
+                                Enable History
+                            </button>
+                        </div>
+                    )}
                 </div>
             </td>
         </tr>
@@ -51,11 +82,27 @@ const HistoryView = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Recent Activity</h2>
+                    <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                        Recent Activity
+                        {/* Status Badge */}
+                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${isEnabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                            {isEnabled ? 'Recording' : 'Paused'}
+                        </div>
+                    </h2>
                     <p className="text-text-muted text-sm mt-1">Track your file transfers and shared content</p>
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Enable/Disable Toggle */}
+                    <button
+                        onClick={toggleHistory}
+                        className={`text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-2 border ${isEnabled ? 'bg-white/5 text-white border-white/10 hover:bg-white/10' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'}`}
+                        title={isEnabled ? "Pause History Recording" : "Enable History Recording"}
+                    >
+                        <div className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-amber-500'}`} />
+                        <span className="hidden sm:inline">{isEnabled ? 'Enabled' : 'Disabled'}</span>
+                    </button>
+
                     {/* Search Bar */}
                     <div className="relative group">
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" />
@@ -133,6 +180,14 @@ const HistoryView = () => {
                                     title="Download Again"
                                 >
                                     <Download size={18} />
+                                </button>
+                            ) : (item.category === 'text' || item.category === 'clipboard') ? (
+                                <button
+                                    onClick={() => handleCopy(item.name)}
+                                    className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all active:scale-95 border border-transparent hover:border-emerald-500/20"
+                                    title="Copy Content"
+                                >
+                                    <Copy size={18} />
                                 </button>
                             ) : (
                                 <span className="text-xs text-text-muted/40 italic">--</span>

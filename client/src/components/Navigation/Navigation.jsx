@@ -12,7 +12,8 @@ const Navigation = ({
     onTabChange,
     isAuthenticated,
     user,
-    onLogout
+    onLogout,
+    onProfileClick
 }) => {
     const [showAbout, setShowAbout] = useState(false);
     const { isInstallable, installPWA } = usePWAInstall();
@@ -91,13 +92,13 @@ const Navigation = ({
                     {isAuthenticated ? (
                         <>
                             <div className="h-4 w-[1px] bg-white/10 mx-1" />
-                            <Tooltip content="Logout">
+                            <Tooltip content="Profile">
                                 <button
-                                    onClick={onLogout}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-error/10 hover:text-error text-text-muted transition-colors"
+                                    onClick={onProfileClick}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-white/5 text-text-muted hover:text-white transition-colors"
                                 >
                                     <img src={user?.photoURL} alt="User" className="w-6 h-6 rounded-full border border-white/10" />
-                                    <LogOut size={16} />
+                                    {/* <LogOut size={16} /> Removed direct logout icon to avoid confusion, just avatar now? Or maybe a generic user icon if image fails */}
                                 </button>
                             </Tooltip>
                         </>
@@ -134,7 +135,7 @@ const Navigation = ({
                         <Info size={20} />
                     </button>
                     {isAuthenticated ? (
-                        <button onClick={onLogout} className="active:scale-95">
+                        <button onClick={onProfileClick} className="active:scale-95">
                             <img src={user?.photoURL} alt="User" className="w-9 h-9 rounded-full border border-white/10" />
                         </button>
                     ) : (

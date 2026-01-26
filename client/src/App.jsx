@@ -33,6 +33,7 @@ import Navigation from './components/Navigation/Navigation';
 import PairDeviceModal from './components/Transfer/PairDeviceModal';
 import RoomManager from './components/Rooms/RoomManager';
 import NotFound from './pages/NotFound';
+import ProfileModal from './components/Auth/ProfileModal';
 
 function App() {
   const dispatch = useDispatch();
@@ -259,7 +260,8 @@ function App() {
               // Connect and wait for data channel open
               await toast.promise(
                 webRTCRef.current.connectToPeer(peer.id, file, {
-                  senderEmail: user?.email
+                  senderEmail: user?.email,
+                  sender: { name: deviceName, type: deviceType }
                 }),
                 {
                   loading: `Connecting to ${getShortName(peer)}...`,
@@ -427,7 +429,8 @@ function App() {
           try {
             await toast.promise(
               webRTCRef.current.connectToPeer(peer.id, file, {
-                senderEmail: user?.email
+                senderEmail: user?.email,
+                sender: { name: deviceName, type: deviceType }
               }),
               {
                 loading: `Connecting...`,
@@ -475,6 +478,12 @@ function App() {
     );
   }
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // ... (existing code)
+
+  /* ... */
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
       <Banner />
@@ -487,8 +496,6 @@ function App() {
           padding: '12px 20px',
         },
       }} />
-
-
 
       <TextShareModal
         isOpen={textModal.isOpen}
@@ -505,18 +512,21 @@ function App() {
         onClose={() => setShowPairModal(false)}
       />
 
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        user={user}
+        onLogout={handleLogout}
+      />
+
       <IncomingRequestModal
         isOpen={incomingRequest.isOpen}
         request={incomingRequest.request}
         onClose={() => {
-          // Closing via overlay click = Decline/Close? Let's assume close = save to history if not explicit
-          // Or just do nothing? Actually better to enforce choice.
-          // If they close, let's treat as decline for safety or do nothing.
-          // But modal prevents interaction.
           setIncomingRequest({ isOpen: false, request: null });
         }}
         onAccept={(shouldDownload) => {
-          autoDownloadRef.current = shouldDownload; // Store user choice
+          autoDownloadRef.current = shouldDownload;
           webRTCRef.current.acceptFileTransfer();
           setIncomingRequest({ isOpen: false, request: null });
         }}
@@ -539,6 +549,7 @@ function App() {
         isAuthenticated={isAuthenticated}
         user={user}
         onLogout={handleLogout}
+        onProfileClick={() => setShowProfileModal(true)}
       />
 
       <main className="relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
@@ -585,14 +596,9 @@ function App() {
             <div className="flex-1 flex items-center justify-center w-full px-4">
               {isAuthenticated ? (
                 <div className="max-w-lg w-full space-y-6">
-                  <div className="w-full flex items-center gap-3 bg-slate-900/30 backdrop-blur-sm p-3 rounded-xl border border-slate-700/30">
-                    <img src={user?.photoURL} alt="Profile" className="w-9 h-9 rounded-full border border-blue-500/30" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-sm truncate">{user?.displayName}</h3>
-                      <p className="text-slate-400 text-xs truncate">{user?.email}</p>
-                    </div>
-                  </div>
+                  {/* Removed Inline User Info here */}
                   <RemoteUpload />
+                  {/* Removed UploadedFilesList here */}
                 </div>
               ) : (
                 <Login />

@@ -48,4 +48,13 @@ export const apiService = {
         if (!response.ok) throw new Error("Failed to get download link");
         return await response.json();
     },
+
+    // List user files
+    listUserFiles: async () => {
+        const response = await fetch(`${API_URL}/files/list`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to list files");
+        return await response.json();
+    }
 };

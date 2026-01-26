@@ -68,3 +68,21 @@ export const getDownloadLink = async (req, res) => {
         res.status(500).json({ error: "Failed to generate download link" });
     }
 };
+
+export const listUserFiles = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user || !user.uid) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const files = await FileModel.find({ owner: user.uid })
+            .sort({ createdAt: -1 })
+            .select('fileId name size type createdAt ownerEmail'); // Exclude _id if nice, but needed for key? ID is fileId.
+
+        res.status(200).json(files);
+    } catch (error) {
+        console.error("List Files Error:", error);
+        res.status(500).json({ error: "Failed to list files", details: error.message });
+    }
+};

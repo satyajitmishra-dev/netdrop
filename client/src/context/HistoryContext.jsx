@@ -4,18 +4,34 @@ import toast from 'react-hot-toast';
 const HistoryContext = createContext(null);
 
 export const HistoryProvider = ({ children }) => {
+    // Default to false (disabled) as per requirement
+    const [isEnabled, setIsEnabled] = useState(() => {
+        const saved = localStorage.getItem('netdrop_history_enabled');
+        return saved === 'true'; // Default is FALSE if not set
+    });
+
     const [history, setHistory] = useState([]);
+
+    const toggleHistory = useCallback(() => {
+        setIsEnabled(prev => {
+            const newState = !prev;
+            localStorage.setItem('netdrop_history_enabled', newState);
+            if (!newState) {
+                // Optional: Clear history when disabling? Or keep it?
+                // Usually "Disable" just stops recording. We keep existing.
+                // If user wants to clear, they use the clear button.
+            }
+            return newState;
+        });
+    }, []);
 
     /**
      * @param {Object} item
-     * @param {string} item.type - 'send' | 'receive'
-     * @param {string} item.category - 'file' | 'text' | 'clipboard'
-     * @param {string} item.name - Filename or Text snippet
-     * @param {number} item.size - File size in bytes (optional)
-     * @param {string} item.peer - Peer Name
-     * @param {Blob} [item.blob] - File Blob (for redownload)
+     * ...
      */
     const addToHistory = useCallback((item) => {
+        if (!isEnabled) return; // Stop if history is disabled
+
         const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
         const newItem = {
             id,
@@ -35,7 +51,7 @@ export const HistoryProvider = ({ children }) => {
                 }));
             }, 180000); // 3 minutes
         }
-    }, []);
+    }, [isEnabled]); // Depend on isEnabled
 
     const clearHistory = useCallback(() => {
         setHistory([]);
@@ -50,14 +66,21 @@ export const HistoryProvider = ({ children }) => {
             a.href = url;
             a.download = item.name;
             a.click();
-            URL.revokeObjectURL(url); // Revoke immediately after trigger
+            URL.revokeObjectURL(url);
         } else {
             toast.error("File expired or unavailable");
         }
     }, [history]);
 
     return (
-        <HistoryContext.Provider value={{ history, addToHistory, clearHistory, downloadFile }}>
+        <HistoryContext.Provider value={{
+            history,
+            addToHistory,
+            clearHistory,
+            downloadFile,
+            isEnabled,
+            toggleHistory
+        }}>
             {children}
         </HistoryContext.Provider>
     );

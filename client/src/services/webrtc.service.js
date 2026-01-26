@@ -373,14 +373,18 @@ class WebRTCService {
         this.pendingTransfer.file = file;
         this.pendingTransfer.peerId = this.targetPeerId;
 
+        // Extract sender info from extraMeta if present
+        const { sender, ...otherMeta } = extraMeta;
+
         // Send Request
         this.sendData(JSON.stringify({
             type: 'file-request',
+            sender: sender, // Pass sender info at root level
             meta: {
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                ...extraMeta // Pass sender email etc
+                ...otherMeta // Pass remaining meta (e.g. senderEmail)
             }
         }));
     }
