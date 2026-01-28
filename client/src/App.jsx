@@ -66,6 +66,14 @@ function App() {
     return () => window.removeEventListener('popstate', handleNavigation);
   }, []);
 
+  // Restore Room Session if exists
+  useEffect(() => {
+    const savedRoom = sessionStorage.getItem('netdrop_room_session');
+    if (savedRoom) {
+      dispatch(setActiveTab('room'));
+    }
+  }, [dispatch]);
+
   // Track if we should auto-download the incoming file
   const autoDownloadRef = React.useRef(true); // Default to true (safe default)
 

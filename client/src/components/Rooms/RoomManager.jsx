@@ -49,6 +49,46 @@ const RoomManager = ({ onPeerSelect }) => {
         return () => socket.off('room-text-received', handleBroadcastText);
     }, []);
 
+    // Auto-Rejoin Room if session exists
+    useEffect(() => {
+        const savedSession = sessionStorage.getItem('netdrop_room_session');
+        if (savedSession && mode === 'menu') {
+            try {
+                const session = JSON.parse(savedSession);
+                if (session && session.passcode) {
+                    setPasscode(session.passcode);
+                    setRoomName(session.name || '');
+
+                    // Attempt to rejoin
+                    toast.loading("Rejoining secure room...", { id: 'room-rejoin' });
+                    setIsBusy(true);
+
+                    // Allow socket to connect if needed
+                    const socket = socketService.getSocket();
+                    if (!socket.connected) socket.connect();
+
+                    // Tiny delay to ensure socket is ready/listeners bound
+                    setTimeout(() => {
+                        socketService.joinRoomByCode(session.passcode, (response) => {
+                            setIsBusy(false);
+                            if (response.success) {
+                                setActiveRoomInfo({ name: response.roomName, passcode: session.passcode });
+                                setMode('active');
+                                toast.success(`Restored connection to ${response.roomName}`, { id: 'room-rejoin' });
+                            } else {
+                                toast.error("Session expired or invalid", { id: 'room-rejoin' });
+                                sessionStorage.removeItem('netdrop_room_session');
+                            }
+                        });
+                    }, 1000);
+                }
+            } catch (e) {
+                console.error("Failed to parse room session", e);
+                sessionStorage.removeItem('netdrop_room_session');
+            }
+        }
+    }, []);
+
     const handleCreateRoom = (e) => {
         e.preventDefault();
         const name = roomName.trim();
@@ -69,7 +109,10 @@ const RoomManager = ({ onPeerSelect }) => {
             clearTimeout(safetyTimer);
             setIsBusy(false);
             if (response.success) {
-                setActiveRoomInfo({ name: response.roomName, passcode: response.passcode });
+                const sessionData = { name: response.roomName, passcode: response.passcode };
+                sessionStorage.setItem('netdrop_room_session', JSON.stringify(sessionData));
+
+                setActiveRoomInfo(sessionData);
                 setMode('active');
                 toast.success(`Created Room: ${response.roomName}`);
             } else {
@@ -98,7 +141,10 @@ const RoomManager = ({ onPeerSelect }) => {
             clearTimeout(safetyTimer);
             setIsBusy(false);
             if (response.success) {
-                setActiveRoomInfo({ name: response.roomName, passcode: code });
+                const sessionData = { name: response.roomName, passcode: code };
+                sessionStorage.setItem('netdrop_room_session', JSON.stringify(sessionData));
+
+                setActiveRoomInfo(sessionData);
                 setMode('active');
                 toast.success(`Joined Room: ${response.roomName}`);
             } else {
@@ -109,6 +155,7 @@ const RoomManager = ({ onPeerSelect }) => {
 
     const handleLeave = () => {
         socketService.leaveRoom();
+        sessionStorage.removeItem('netdrop_room_session');
         setActiveRoomInfo(null);
         setRoomName('');
         setPasscode('');
@@ -405,7 +452,7 @@ const RoomManager = ({ onPeerSelect }) => {
 
             {/* Waiting State (Empty) */}
             {peers.length === 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center -mt-20">
+                <div className="flex-1 flex flex-col items-center justify-center mt-12">
                     <div className="relative">
                         <div className="absolute inset-0 w-24 h-24 bg-primary/20 rounded-full animate-ping" />
                         <div className="absolute inset-4 w-16 h-16 bg-primary/10 rounded-full animate-pulse" />
