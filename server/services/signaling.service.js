@@ -12,14 +12,21 @@ export class SignalingService {
             // ... (rest of code) ...
 
             // Robust IP detection for Production (behind proxy/LB)
-
+            // Handle multiple IPs in x-forwarded-for (e.g. "client, proxy1, proxy2")
             const forwarded = socket.handshake.headers['x-forwarded-for'];
             let clientIp = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
 
-            // Normalize IPv6 mapped IPv4
+            // Normalize IPv6 mapped IPv4 (e.g., ::ffff:192.168.1.1 -> 192.168.1.1)
             if (clientIp && clientIp.startsWith('::ffff:')) {
                 clientIp = clientIp.substring(7);
             }
+
+            // Normalization for local loopback to avoid "127.0.0.1" vs "::1" issues locally
+            if (clientIp === '::1') {
+                clientIp = '127.0.0.1';
+            }
+
+            console.log(`[Signaling] New Connection: ${socket.id} | IP: ${clientIp} | UA: ${socket.handshake.headers['user-agent']}`);
 
             let room = `network:${clientIp}`; // Default to IP-based room
             socket.join(room);

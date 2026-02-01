@@ -3,91 +3,87 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" /> <!-- Fallback for generic crawlers -->
+
+  <!-- Mobile & Accessibility -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#020617">
+
+  <!-- Primary SEO -->
+  <title>NetDrop – Secure P2P File & Text Sharing | AirDrop Alternative</title>
+  <meta name="description"
+    content="NetDrop lets you instantly share files and text between devices using secure peer-to-peer transfer. No signup, no limits, fully encrypted. Best AirDrop alternative for Windows, Android & Web." />
+  <link rel="canonical" href="https://netdrop.site/" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-  <!-- Primary Meta Tags -->
-  <title>NetDrop | Secure File Transfer & Text Sharing - No Signup</title>
-  <meta name="title" content="NetDrop | AirDrop for Web, Windows & Android - Secure File Sharing (No Signup)">
-  <meta name="description"
-    content="Instantly share files, photos, and text between devices. Fast, secure, and private P2P file transfer. Best AirDrop & PairDrop alternative for Windows, Android, and iOS. Drop files, not emails - fully encrypted, no size limits.">
-  <meta name="keywords"
-    content="file share, text share, local file transfer, peer to peer file transfer, p2p file sharing, browser file sharing, instant file transfer, fast file sharing, secure file sharing, encrypted file transfer, end to end encrypted file sharing, no login file transfer, no signup file sharing, no account file sharing, private file sharing, anonymous file sharing, zero tracking file transfer, cookie free file sharing, airdrop alternative, airdrop for windows, airdrop for android, airdrop for linux, airdrop for pc, airdrop web alternative, airdrop cross platform, pairdrop, pairdrop alternative, pairdrop for windows, pairdrop for android, pairdrop clone, pairdrop web, snapdrop, snapdrop alternative, snapdrop clone, sharedrop, sharedrop alternative, send files online, send files without internet, send files locally, send files over wifi, send files between devices, send files pc to mobile, send files mobile to pc, send files phone to laptop, cross platform file transfer, multi device file sharing, real time file transfer, instant device pairing, qr code file sharing, room based file sharing, large file transfer, send large files free, unlimited file size transfer, no file size limit transfer, web based file sharing, pwa file sharing, progressive web app file transfer, open source file sharing, self hosted file sharing, netdrop, netdrop file sharing, netdrop p2p, netdrop app, netdrop web, netdrop alternative to airdrop">
-  <meta name="theme-color" content="#020617">
-  <link rel="canonical" href="https://netdrop.site" />
-
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://netdrop.site/">
-  <meta property="og:title" content="NetDrop | AirDrop for Web - Secure File Sharing (No Signup)">
+  <meta property="og:title" content="NetDrop – Secure File Sharing Without Signup">
   <meta property="og:description"
-    content="Drop files, not emails. Instantly share files, photos, and text between devices. Fast, secure, and private P2P file transfer. The best web-based AirDrop alternative.">
+    content="Instant encrypted P2P file & text sharing between devices. Drop files, not emails. Fast, private, unlimited." />
   <meta property="og:image" content="https://netdrop.site/og-image.png">
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://netdrop.site/">
-  <meta property="twitter:title" content="NetDrop | AirDrop for Web - Secure File Sharing (No Signup)">
-  <meta property="twitter:description"
-    content="Drop files, not emails. Instantly share files, photos, and text between devices. Fast, secure, and private P2P file transfer. The best web-based AirDrop alternative.">
-  <meta property="twitter:image" content="https://netdrop.site/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NetDrop – AirDrop Alternative for Web">
+  <meta name="twitter:description"
+    content="Secure cross-platform file sharing. No accounts. No limits. Fully encrypted." />
+  <meta name="twitter:image" content="https://netdrop.site/og-image.png">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Structured Data -->
+  <!-- Structured Data: Software -->
   <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "SoftwareApplication",
-          "name": "NetDrop",
-          "applicationCategory": "UtilityDetail",
-          "operatingSystem": "Any",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "description": "Secure P2P file and text sharing between devices. AirDrop for Windows, Android, and Web.",
-          "url": "https://netdrop.site",
-          "featureList": [
-            "End-to-End Encryption",
-            "P2P High Speed Transfer",
-            "No File Size Limits",
-            "Cross-Platform (Windows, Android, iOS, Mac)",
-            "No Signup Required"
-          ],
-          "screenshot": "https://netdrop.site/og-image.png",
-          "image": "https://netdrop.site/favicon.ico",
-          "author": {
-            "@type": "Person",
-            "name": "Satyajit Mishra"
-          }
-        },
-        {
-          "@type": "WebSite",
-          "url": "https://netdrop.site",
-          "name": "NetDrop",
-          "description": "Secure local file sharing in your browser.",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://netdrop.site/?q={search_term_string}",
-            "query-input": "required name=search_term_string"
-          }
-        }
-      ]
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "NetDrop",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any",
+    "description": "Secure peer-to-peer file and text sharing between devices. No signup required.",
+    "url": "https://netdrop.site/",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
     }
+  }
   </script>
+
+  <!-- FAQ Schema (SEO boost) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "Is NetDrop secure?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. NetDrop uses encrypted peer-to-peer transfer so files never pass through central servers."
+      }
+    },{
+      "@type": "Question",
+      "name": "Does NetDrop require signup?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No signup or account is required. Open the app and start sharing instantly."
+      }
+    }]
+  }
+  </script>
+
 </head>
+
 
 <body>
   <div id="root"></div>

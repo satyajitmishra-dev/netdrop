@@ -228,13 +228,13 @@ class WebRTCService {
                 if (state === 'failed' || state === 'disconnected') {
                     // Fail fast
                     if (this.connectReject) {
-                        this.connectReject(new Error("Connection Failed (ICE " + state + ")"));
+                        this.connectReject(new Error("Device unreachable (ICE " + state + "). Check firewall/network or use 'Secure Rooms'."));
                         this.connectReject = null;
                         this.connectResolve = null;
                     }
                     // Notify App.jsx to stop spinner
                     if (this.onSendProgress) {
-                        this.onSendProgress({ type: 'rejected', error: 'Connection lost (Check Firewall/NAT)' });
+                        this.onSendProgress({ type: 'rejected', error: 'Connection lost. Devices might be on different networks.' });
                     }
                 }
             };
