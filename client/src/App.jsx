@@ -22,23 +22,26 @@ import DiscoveryGrid from './components/Transfer/DiscoveryGrid';
 import RemoteUpload from './components/Remote/RemoteUpload';
 import Footer from './components/Common/Footer';
 import Login from './components/Auth/Login';
-import SecureDownload from './pages/SecureDownload';
 import IncomingRequestModal from './components/Transfer/IncomingRequestModal';
-import ParticlesBackground from './components/UI/ParticlesBackground';
 import Banner from './components/UI/Banner';
-import WelcomeModal from './components/UI/WelcomeModal';
 import { useSound } from './hooks/useSound';
-import TextShareModal from './components/Transfer/TextShareModal';
 import Navigation from './components/Navigation/Navigation';
-import PairDeviceModal from './components/Transfer/PairDeviceModal';
-// Lazy-loaded landing pages (not needed on initial load)
+
+// Lazy-loaded components (reduce initial bundle size)
+const ParticlesBackground = lazy(() => import('./components/UI/ParticlesBackground'));
+const WelcomeModal = lazy(() => import('./components/UI/WelcomeModal'));
+const TextShareModal = lazy(() => import('./components/Transfer/TextShareModal'));
+const PairDeviceModal = lazy(() => import('./components/Transfer/PairDeviceModal'));
+const ProfileModal = lazy(() => import('./components/Auth/ProfileModal'));
+const SecureDownload = lazy(() => import('./pages/SecureDownload'));
+
+// Lazy-loaded pages
 const PairDropAlternative = lazy(() => import('./pages/PairDropAlternative'));
 const SnapDropAlternative = lazy(() => import('./pages/SnapDropAlternative'));
 const AirDropForWindows = lazy(() => import('./pages/AirDropForWindows'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const HistoryView = lazy(() => import('./components/History/HistoryView'));
 const RoomManager = lazy(() => import('./components/Rooms/RoomManager'));
-import ProfileModal from './components/Auth/ProfileModal';
 
 function App() {
   const dispatch = useDispatch();
@@ -504,7 +507,9 @@ function App() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
       <Banner />
-      <WelcomeModal />
+      <Suspense fallback={null}>
+        <WelcomeModal />
+      </Suspense>
       <Toaster position="top-center" reverseOrder={false} toastOptions={{
         style: {
           background: '#0f172a',
@@ -515,27 +520,29 @@ function App() {
         },
       }} />
 
-      <TextShareModal
-        isOpen={textModal.isOpen}
-        onClose={() => setTextModal({ ...textModal, isOpen: false })}
-        mode={textModal.mode}
-        peerName={getShortName(textModal.peer || {})}
-        initialText={textModal.text}
-        onSend={handleSendText}
-        onSendClipboard={() => handleSendClipboard(textModal.peer)}
-      />
+      <Suspense fallback={null}>
+        <TextShareModal
+          isOpen={textModal.isOpen}
+          onClose={() => setTextModal({ ...textModal, isOpen: false })}
+          mode={textModal.mode}
+          peerName={getShortName(textModal.peer || {})}
+          initialText={textModal.text}
+          onSend={handleSendText}
+          onSendClipboard={() => handleSendClipboard(textModal.peer)}
+        />
 
-      <PairDeviceModal
-        isOpen={showPairModal}
-        onClose={() => setShowPairModal(false)}
-      />
+        <PairDeviceModal
+          isOpen={showPairModal}
+          onClose={() => setShowPairModal(false)}
+        />
 
-      <ProfileModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-        user={user}
-        onLogout={handleLogout}
-      />
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          user={user}
+          onLogout={handleLogout}
+        />
+      </Suspense>
 
       <IncomingRequestModal
         isOpen={incomingRequest.isOpen}
@@ -565,7 +572,9 @@ function App() {
       />
 
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <ParticlesBackground />
+        <Suspense fallback={null}>
+          <ParticlesBackground />
+        </Suspense>
       </div>
 
       <Navigation
