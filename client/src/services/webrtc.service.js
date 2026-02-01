@@ -8,10 +8,28 @@ const RTC_CONFIG = {
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
+
+        // TURN servers (for relayed connections when direct P2P fails)
+        // Using OpenRelay free TURN servers (community-run, limited but functional)
+        {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
     ],
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle', // Optimizes connection usage
-    iceTransportPolicy: 'all',  // Ensure we don't force relay
+    iceTransportPolicy: 'all',  // Use both direct and relayed candidates
 };
 
 class WebRTCService {
