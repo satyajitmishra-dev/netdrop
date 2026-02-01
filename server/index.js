@@ -55,9 +55,29 @@ app.use(cors({
     credentials: true
 }));
 app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'", "wss:", "ws:", "https:"],
+            frameSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+        }
+    },
+    crossOriginEmbedderPolicy: false, // Required for WebRTC
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true
+    },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xFrameOptions: { action: "sameorigin" } // Prevents clickjacking
 }));
 app.use(morgan("dev"));
 app.use(express.json());
@@ -80,8 +100,10 @@ new SignalingService(io);
 
 import fileRoutes from "./routes/file.routes.js";
 import feedbackRoutes from "./routes/feedback.routes.js";
+import statsRoutes from "./routes/stats.routes.js";
 app.use("/api/files", fileRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/stats", statsRoutes);
 
 // Health Check
 app.get("/health", (req, res) => {

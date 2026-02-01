@@ -11,6 +11,31 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
     const mySocketId = socketService.socket?.id;
     const { playConnect } = useSound();
 
+    // Long-press support for mobile (replaces right-click)
+    const longPressTimerRef = React.useRef(null);
+    const longPressTriggered = React.useRef(false);
+
+    const handleTouchStart = (peer) => {
+        longPressTriggered.current = false;
+        longPressTimerRef.current = setTimeout(() => {
+            longPressTriggered.current = true;
+            if (onRightClickPeer) onRightClickPeer(peer, null);
+        }, 600); // 600ms for long press
+    };
+
+    const handleTouchEnd = () => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+        }
+    };
+
+    const handleTouchMove = () => {
+        // Cancel long-press if user moves finger
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+        }
+    };
+
     // Filter self from peers list using ID for safety, fallback to name
     const [filteredPeers, setFilteredPeers] = React.useState([]);
 
@@ -166,8 +191,6 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                 className="relative z-50 origin-center"
                                 onMouseEnter={() => handleHoverStart(peer.id)}
                                 onMouseLeave={handleHoverEnd}
-                                onClick={(e) => { e.stopPropagation(); onSelectPeer(peer); }}
-                                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onRightClickPeer && onRightClickPeer(peer, e); }}
                                 onDragOver={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -189,6 +212,20 @@ const DiscoveryGrid = ({ peers = [], onSelectPeer, onRightClickPeer, myDeviceNam
                                     peer={peer}
                                     isHovered={tooltipPeerId === peer.id}
                                     isDragOver={dragOverPeerId === peer.id}
+                                    onContextMenu={() => onRightClickPeer && onRightClickPeer(peer)}
+                                    onTouchStart={() => handleTouchStart(peer)}
+                                    onTouchEnd={handleTouchEnd}
+                                    onTouchMove={handleTouchMove}
+                                    onClick={(e) => {
+                                        // Prevent click if long-press was triggered
+                                        if (longPressTriggered.current) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            return;
+                                        }
+                                        e.stopPropagation();
+                                        onSelectPeer(peer);
+                                    }}
                                 />
                             </motion.div>
                         ))}

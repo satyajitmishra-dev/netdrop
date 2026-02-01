@@ -56,6 +56,21 @@ const PairDeviceModal = ({ isOpen, onClose }) => {
         }
     }, [isOpen]);
 
+    // ESC key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     const handleCopy = () => {
         if (myCode) {
             navigator.clipboard.writeText(myCode);

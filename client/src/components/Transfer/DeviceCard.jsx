@@ -7,6 +7,7 @@ const DeviceCard = ({
     peer,
     isHovered,
     isDragOver,
+    onContextMenu,
     ...props
 }) => {
 
@@ -16,19 +17,28 @@ const DeviceCard = ({
         return <Laptop size={20} strokeWidth={1.5} />;
     };
 
+    // Handle context menu with guaranteed preventDefault
+    const handleContextMenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onContextMenu) onContextMenu(e);
+        return false; // Extra prevention for older browsers
+    };
+
     return (
         <div
             className={cn(
                 "relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all duration-300", // p-4->p-3, gap-3->gap-2
-                "bg-surface/5 backdrop-blur-md border border-white/5 shadow-2xl group",
+                "bg-surface/5 backdrop-blur-md border border-white/5 shadow-2xl group cursor-pointer select-none",
                 isHovered && "bg-surface/10 border-white/10 scale-105",
                 isDragOver && "ring-2 ring-success/50 bg-success/10 scale-110",
                 !isDragOver && "hover:shadow-primary/20 hover:border-primary/30"
             )}
+            onContextMenu={handleContextMenu}
             {...props}
         >
             {/* Status Indicator (Online/Signal) */}
-            <div className="absolute top-2 right-2 flex items-center gap-1">
+            <div className="absolute top-2 right-2 flex items-center gap-1 pointer-events-none">
                 <div className={cn(
                     "w-1.5 h-1.5 rounded-full",
                     peer.network === 'LAN' ? "bg-success shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-warning"
@@ -37,7 +47,7 @@ const DeviceCard = ({
 
             {/* Device Icon Circle */}
             <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300", // w-16->w-12, rounded-2xl->rounded-xl
+                "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 pointer-events-none", // w-16->w-12, rounded-2xl->rounded-xl
                 "bg-gradient-to-br from-white/10 to-transparent border border-white/5",
                 isHovered ? "text-white shadow-inner" : "text-text-muted"
             )}>
@@ -45,7 +55,7 @@ const DeviceCard = ({
             </div>
 
             {/* Info Section */}
-            <div className="flex flex-col items-center text-center space-y-0.5">
+            <div className="flex flex-col items-center text-center space-y-0.5 pointer-events-none">
                 <span className="text-white font-semibold text-xs tracking-tight drop-shadow-md">
                     {getShortName(peer)}
                 </span>
@@ -59,7 +69,7 @@ const DeviceCard = ({
 
             {/* Selection/Action Hint (Visible on Hover) */}
             <div className={cn(
-                "absolute -bottom-10 opacity-0 transition-opacity duration-300 flex flex-col items-center gap-1",
+                "absolute -bottom-10 opacity-0 transition-opacity duration-300 flex flex-col items-center gap-1 pointer-events-none",
                 isHovered && "opacity-100"
             )}>
                 <span className="text-[10px] text-primary font-bold uppercase tracking-widest whitespace-nowrap">

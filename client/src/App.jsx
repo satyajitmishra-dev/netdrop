@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
 import { Shield, Link as LinkIcon } from 'lucide-react';
@@ -23,16 +23,21 @@ import RemoteUpload from './components/Remote/RemoteUpload';
 import Footer from './components/Common/Footer';
 import Login from './components/Auth/Login';
 import SecureDownload from './pages/SecureDownload';
-import HistoryView from './components/History/HistoryView';
 import IncomingRequestModal from './components/Transfer/IncomingRequestModal';
 import ParticlesBackground from './components/UI/ParticlesBackground';
 import Banner from './components/UI/Banner';
+import WelcomeModal from './components/UI/WelcomeModal';
 import { useSound } from './hooks/useSound';
 import TextShareModal from './components/Transfer/TextShareModal';
 import Navigation from './components/Navigation/Navigation';
 import PairDeviceModal from './components/Transfer/PairDeviceModal';
-import RoomManager from './components/Rooms/RoomManager';
-import NotFound from './pages/NotFound';
+// Lazy-loaded landing pages (not needed on initial load)
+const PairDropAlternative = lazy(() => import('./pages/PairDropAlternative'));
+const SnapDropAlternative = lazy(() => import('./pages/SnapDropAlternative'));
+const AirDropForWindows = lazy(() => import('./pages/AirDropForWindows'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const HistoryView = lazy(() => import('./components/History/HistoryView'));
+const RoomManager = lazy(() => import('./components/Rooms/RoomManager'));
 import ProfileModal from './components/Auth/ProfileModal';
 
 function App() {
@@ -78,7 +83,11 @@ function App() {
   const autoDownloadRef = React.useRef(true); // Default to true (safe default)
 
   const isDownloadPage = currentPath.startsWith('/download/');
-  const isNotFound = !isDownloadPage && currentPath !== '/' && currentPath !== '';
+  const isPairDropAlt = currentPath === '/pairdrop-alternative';
+  const isSnapDropAlt = currentPath === '/snapdrop-alternative';
+  const isAirDropWin = currentPath === '/airdrop-for-windows';
+  const isLandingPage = isPairDropAlt || isSnapDropAlt || isAirDropWin;
+  const isNotFound = !isDownloadPage && !isLandingPage && currentPath !== '/' && currentPath !== '';
 
   const [textModal, setTextModal] = useState({
     isOpen: false,
@@ -495,6 +504,7 @@ function App() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
       <Banner />
+      <WelcomeModal />
       <Toaster position="top-center" reverseOrder={false} toastOptions={{
         style: {
           background: '#0f172a',
@@ -570,7 +580,14 @@ function App() {
         onProfileClick={() => setShowProfileModal(true)}
       />
 
-      <main className="relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
+      {/* Landing Pages (no nav/modals) */}
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+        {isPairDropAlt && <PairDropAlternative />}
+        {isSnapDropAlt && <SnapDropAlternative />}
+        {isAirDropWin && <AirDropForWindows />}
+      </Suspense>
+
+      <main className={`relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden ${isLandingPage ? 'hidden' : ''}`}>
         {activeTab === 'local' ? (
           <div className="w-full h-full flex flex-col items-center justify-center duration-500">
             <div className="w-full h-full max-w-[1600px] mx-auto relative px-4 flex items-center justify-center">
@@ -598,14 +615,18 @@ function App() {
         ) : activeTab === 'room' ? (
           <div className="w-full flex-1 flex flex-col items-center justify-between duration-500">
             <div className="flex-1 flex items-center justify-center w-full px-4">
-              <RoomManager onPeerSelect={handlePeerSelect} />
+              <Suspense fallback={<div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />}>
+                <RoomManager onPeerSelect={handlePeerSelect} />
+              </Suspense>
             </div>
             <Footer />
           </div>
         ) : activeTab === 'history' ? (
           <div className="w-full flex-1 flex flex-col items-center justify-between duration-500">
             <div className="flex-1 w-full px-4 pt-4">
-              <HistoryView />
+              <Suspense fallback={<div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />}>
+                <HistoryView />
+              </Suspense>
             </div>
             <Footer />
           </div>

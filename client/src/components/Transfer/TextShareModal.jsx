@@ -16,6 +16,21 @@ const TextShareModal = ({ isOpen, onClose, mode, peerName, initialText = '', onS
         setText(initialText);
     }, [initialText]);
 
+    // ESC key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {

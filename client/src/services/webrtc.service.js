@@ -3,33 +3,33 @@ import { socketService } from "./socket.service";
 
 const RTC_CONFIG = {
     iceServers: [
-        // STUN servers (Google - Robust & Reliable)
+        // STUN servers (Google & Twilio - reliable)
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
 
-        // TURN servers (for relayed connections when direct P2P fails)
-        // Using OpenRelay free TURN servers (community-run, limited but functional)
+        // Free TURN servers from multiple providers for reliability
+        // Metered.ca free tier
         {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:a.relay.metered.ca:80",
+            username: "e8dd65f92b14d3e5c9b09b72",
+            credential: "uWdWNmkhvyqTmFnN",
         },
         {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:a.relay.metered.ca:443",
+            username: "e8dd65f92b14d3e5c9b09b72",
+            credential: "uWdWNmkhvyqTmFnN",
         },
         {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:a.relay.metered.ca:443?transport=tcp",
+            username: "e8dd65f92b14d3e5c9b09b72",
+            credential: "uWdWNmkhvyqTmFnN",
         },
     ],
     iceCandidatePoolSize: 10,
-    bundlePolicy: 'max-bundle', // Optimizes connection usage
-    iceTransportPolicy: 'all',  // Use both direct and relayed candidates
+    bundlePolicy: 'max-bundle',
+    iceTransportPolicy: 'all',
 };
 
 class WebRTCService {
@@ -241,19 +241,36 @@ class WebRTCService {
 
             this.peerConnection.oniceconnectionstatechange = () => {
                 const state = this.peerConnection.iceConnectionState;
-                /* console.log(`ICE State: ${state}`); */
+                console.log(`[WebRTC] ICE State: ${state}`);
 
-                if (state === 'failed' || state === 'disconnected') {
-                    // Fail fast
+                if (state === 'failed') {
+                    // ICE failed completely - give up
                     if (this.connectReject) {
-                        this.connectReject(new Error("Device unreachable (ICE " + state + "). Check firewall/network or use 'Secure Rooms'."));
+                        this.connectReject(new Error("Connection failed. Try using 'Room' tab for cross-network sharing."));
                         this.connectReject = null;
                         this.connectResolve = null;
                     }
-                    // Notify App.jsx to stop spinner
                     if (this.onSendProgress) {
-                        this.onSendProgress({ type: 'rejected', error: 'Connection lost. Devices might be on different networks.' });
+                        this.onSendProgress({ type: 'rejected', error: 'Connection failed (ICE). Try Room tab instead.' });
                     }
+                } else if (state === 'disconnected') {
+                    // Disconnected can be temporary - wait 5 seconds before failing
+                    console.log("[WebRTC] Connection temporarily disconnected, waiting for recovery...");
+                    setTimeout(() => {
+                        if (this.peerConnection && this.peerConnection.iceConnectionState === 'disconnected') {
+                            console.log("[WebRTC] Connection did not recover, failing...");
+                            if (this.connectReject) {
+                                this.connectReject(new Error("Connection lost. Try using 'Room' tab for cross-network sharing."));
+                                this.connectReject = null;
+                                this.connectResolve = null;
+                            }
+                            if (this.onSendProgress) {
+                                this.onSendProgress({ type: 'rejected', error: 'Connection lost. Try Room tab.' });
+                            }
+                        }
+                    }, 5000); // 5 second grace period for recovery
+                } else if (state === 'connected') {
+                    console.log("[WebRTC] ICE Connected successfully!");
                 }
             };
         } catch (err) {

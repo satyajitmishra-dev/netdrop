@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogOut, User, X, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UploadedFilesList from '../Remote/UploadedFilesList';
 import PremiumButton from '../UI/PremiumButton';
 
 const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
+    // ESC key to close modal
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     return (
         <AnimatePresence>
             {isOpen && (

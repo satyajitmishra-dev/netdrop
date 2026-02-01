@@ -1,6 +1,7 @@
 import React from 'react';
 import { EyeOff, ShieldCheck } from 'lucide-react';
 import { useAppVersion } from '../../hooks/useAppVersion';
+import FilesSharedCounter from '../UI/FilesSharedCounter';
 
 const Footer = () => {
     const year = new Date().getFullYear();
@@ -8,6 +9,9 @@ const Footer = () => {
 
     return (
         <footer className="w-full py-6 mt-auto relative z-10 flex flex-col items-center justify-center">
+            {/* Files Shared Counter */}
+            <FilesSharedCounter />
+
             {/* Trust Text */}
             <p className="text-slate-500 text-xs font-medium mb-3 tracking-wide">
                 Connection is end-to-end encrypted
