@@ -5,8 +5,15 @@ import {
     Check, X, Zap, Shield, Cloud, Wifi, Lock,
     ArrowRight, Globe, Users, Smartphone, Share2
 } from 'lucide-react';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const SnapDropAlternative = () => {
+    usePageMeta({
+        title: 'NetDrop vs Snapdrop – Best Snapdrop Alternative',
+        description: 'Snapdrop is local-only. NetDrop works across networks with rooms, pairing, and cloud file links for secure sharing anywhere.',
+        path: '/snapdrop-alternative'
+    });
+
     const features = [
         { name: 'Local Network Discovery', netdrop: true, snapdrop: true },
         { name: 'Cross-Network Sharing', netdrop: true, snapdrop: false },

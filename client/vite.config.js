@@ -62,6 +62,12 @@ export default defineConfig({
   ],
   build: {
     rollupOptions: {
+      input: {
+        main: './index.html',
+        pairdrop: './pairdrop-alternative.html',
+        snapdrop: './snapdrop-alternative.html',
+        airdrop: './airdrop-for-windows.html'
+      },
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit'],

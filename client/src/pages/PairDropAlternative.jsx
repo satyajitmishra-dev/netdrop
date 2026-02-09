@@ -5,8 +5,15 @@ import {
     Check, X, Zap, Shield, Cloud, Smartphone, Monitor,
     ArrowRight, Globe, Wifi, Lock, Share2, Download
 } from 'lucide-react';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const PairDropAlternative = () => {
+    usePageMeta({
+        title: 'NetDrop vs PairDrop – Better PairDrop Alternative',
+        description: 'Compare NetDrop vs PairDrop. NetDrop adds cloud sharing, passcode protection, and transfer history on top of fast local transfers.',
+        path: '/pairdrop-alternative'
+    });
+
     const features = [
         { name: 'Local Network Sharing', netdrop: true, pairdrop: true },
         { name: 'Cross-Network Rooms', netdrop: true, pairdrop: true },

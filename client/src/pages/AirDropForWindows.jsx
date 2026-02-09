@@ -5,8 +5,15 @@ import {
     Check, X, Zap, Monitor, Smartphone, Laptop, Tablet,
     ArrowRight, Apple, Chrome, Wifi, Cloud, Lock, Share2
 } from 'lucide-react';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const AirDropForWindows = () => {
+    usePageMeta({
+        title: 'AirDrop for Windows – NetDrop',
+        description: 'AirDrop for Windows and every device. Share files instantly across Windows, macOS, iOS, Android, and Linux with NetDrop.',
+        path: '/airdrop-for-windows'
+    });
+
     const platforms = [
         { name: 'Windows 10/11', icon: <Monitor size={24} />, supported: true },
         { name: 'macOS', icon: <Laptop size={24} />, supported: true },

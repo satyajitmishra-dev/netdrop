@@ -5,10 +5,18 @@ import { toast } from 'react-hot-toast';
 import { apiService } from '../services/api.service';
 import { cryptoService } from '../services/crypto.service';
 import { useSelector } from 'react-redux';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const SecureDownload = () => {
     const { fileId } = useParams();
     const { user } = useSelector((state) => state.auth);
+
+    usePageMeta({
+        title: 'Secure Download – NetDrop',
+        description: 'Unlock and download your encrypted file securely with NetDrop.',
+        path: fileId ? `/download/${fileId}` : '/download',
+        noIndex: true
+    });
 
     useEffect(() => {
         if (user?.email) {

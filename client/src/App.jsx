@@ -16,6 +16,7 @@ import { useDeviceIdentity } from './hooks/useDeviceIdentity';
 import { useRealtimePresence } from './hooks/useRealtimePresence';
 import { useWebRTC } from './hooks/useWebRTC';
 import { useHistory } from './context/HistoryContext';
+import { usePageMeta } from './hooks/usePageMeta';
 
 import { getShortName } from './utils/device';
 
@@ -45,6 +46,12 @@ const HistoryView = lazy(() => import('./components/History/HistoryView'));
 const RoomManager = lazy(() => import('./components/Rooms/RoomManager'));
 
 function MainApp() {
+  usePageMeta({
+    title: 'NetDrop – Secure P2P File & Text Sharing | AirDrop Alternative',
+    description: 'NetDrop lets you instantly share files and text between devices using secure peer-to-peer transfer. No signup, no limits, fully encrypted. Best AirDrop alternative for Windows, Android & Web.',
+    path: '/'
+  });
+
   const dispatch = useDispatch();
   const { addToHistory, isEnabled: isHistoryEnabled } = useHistory();
   const { playSuccess, playError, playPop } = useSound();

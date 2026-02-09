@@ -143,6 +143,23 @@ app.use((err, req, res, next) => {
 });
 
 // SPA Fallback (Serve index.html for non-API routes)
+// Serve pre-rendered landing pages
+app.get('/pairdrop-alternative', (req, res) => {
+    res.set("Cache-Control", "public, max-age=3600");
+    res.sendFile(path.join(__dirname, "../client/dist/pairdrop-alternative.html"));
+});
+
+app.get('/snapdrop-alternative', (req, res) => {
+    res.set("Cache-Control", "public, max-age=3600");
+    res.sendFile(path.join(__dirname, "../client/dist/snapdrop-alternative.html"));
+});
+
+app.get('/airdrop-for-windows', (req, res) => {
+    res.set("Cache-Control", "public, max-age=3600");
+    res.sendFile(path.join(__dirname, "../client/dist/airdrop-for-windows.html"));
+});
+
+// SPA fallback for all other routes
 app.get(/(.*)/, (req, res) => {
     res.set("Cache-Control", "no-store");
     res.sendFile(path.join(__dirname, "../client/dist/index.html"));
