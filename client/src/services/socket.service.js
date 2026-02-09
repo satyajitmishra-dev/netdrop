@@ -3,9 +3,14 @@ import { io } from "socket.io-client";
 // Production: Use Render backend. Development: Use localhost.
 const PRODUCTION_SERVER = "https://netdrop-server.onrender.com";
 const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+// Dynamic Socket URL:
+// 1. Production: use VITE_SOCKET_URL (if set) OR Render backend directly.
+//    - We need direct connection because Vercel (static) cannot proxy WebSockets to Render.
+// 2. Development: Use relative path "/" to leverage Vite Proxy (avoids Mixed Content on local HTTPS)
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD
-    ? (isSecure ? PRODUCTION_SERVER.replace('http://', 'https://') : PRODUCTION_SERVER)
-    : "http://localhost:5004");
+    ? "https://netdrop-server.onrender.com"
+    : "/");
 
 class SocketService {
     constructor() {

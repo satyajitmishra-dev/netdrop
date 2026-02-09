@@ -1,12 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
+  server: {
+    https: true,
+    host: true, // Expose to network
+    proxy: {
+      '/socket.io': {
+        target: 'http://localhost:5004',
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api': {
+        target: 'http://localhost:5004',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   plugins: [
     react(),
+    basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
