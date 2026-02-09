@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Check, X, Zap, Shield, Cloud, Smartphone, Monitor,
@@ -65,13 +66,13 @@ const PairDropAlternative = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <a
-                                href="/"
+                            <Link
+                                to="/"
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-blue-600 rounded-xl text-white font-bold shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-shadow"
                             >
                                 Try NetDrop Free
                                 <ArrowRight size={20} />
-                            </a>
+                            </Link>
                             <a
                                 href="#comparison"
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-colors"
@@ -159,13 +160,13 @@ const PairDropAlternative = () => {
                     <p className="text-lg text-slate-400 mb-8">
                         Start sharing files instantly. No downloads, no signups, no hassle.
                     </p>
-                    <a
-                        href="/"
+                    <Link
+                        to="/"
                         className="inline-flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-r from-primary to-blue-600 rounded-xl text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-shadow"
                     >
                         <Zap size={22} />
                         Start Sharing Now
-                    </a>
+                    </Link>
                 </div>
             </section>
 

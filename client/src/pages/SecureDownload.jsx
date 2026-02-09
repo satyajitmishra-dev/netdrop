@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Lock, LockOpen, Download, FileText, Loader2, Info, X, Mail, Key } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { apiService } from '../services/api.service';
@@ -6,7 +7,7 @@ import { cryptoService } from '../services/crypto.service';
 import { useSelector } from 'react-redux';
 
 const SecureDownload = () => {
-    const fileId = window.location.pathname.split('/download/')[1];
+    const { fileId } = useParams();
     const { user } = useSelector((state) => state.auth);
 
     useEffect(() => {
@@ -26,6 +27,10 @@ const SecureDownload = () => {
 
     const handleDownload = async (e) => {
         e.preventDefault();
+        if (!fileId) {
+            toast.error("Invalid download link");
+            return;
+        }
         if (!email || !passcode) {
             toast.error("Please enter both Email and Passcode");
             return;

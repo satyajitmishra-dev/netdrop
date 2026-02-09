@@ -8,6 +8,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import { connectDB } from "./config/db.config.js";
 import { SignalingService } from "./services/signaling.service.js";
 
@@ -23,11 +24,13 @@ const server = http.createServer(app);
 // Trust Proxy (Required for Production behind Nginx/Load Balancers)
 app.set("trust proxy", 1);
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Force HTTPS Redirect (Production)
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
     app.use((req, res, next) => {
-        if (req.header('x-forwarded-proto') !== 'https') {
-            return res.redirect(`https://${req.header('host')}${req.url}`);
+        if (!req.secure) {
+            return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
         }
         next();
     });
@@ -58,14 +61,20 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                ...(isProduction ? [] : ["'unsafe-eval'"]),
+                "https://www.googletagmanager.com",
+                "https://www.google-analytics.com"
+            ],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "blob:", "https:"],
             connectSrc: ["'self'", "wss:", "ws:", "https:"],
             frameSrc: ["'self'"],
             objectSrc: ["'none'"],
-            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+            upgradeInsecureRequests: isProduction ? [] : null,
         }
     },
     crossOriginEmbedderPolicy: false, // Required for WebRTC
@@ -80,11 +89,15 @@ app.use(helmet({
     xFrameOptions: { action: "sameorigin" } // Prevents clickjacking
 }));
 app.use(morgan("dev"));
+app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 
 // Serve Static Files (Production)
-app.use(express.static(path.join(__dirname, "../client/dist")));
+app.use(express.static(path.join(__dirname, "../client/dist"), {
+    maxAge: isProduction ? "1y" : 0,
+    immutable: isProduction
+}));
 
 // Socket.io Setup
 const io = new Server(server, {
@@ -110,8 +123,28 @@ app.get("/health", (req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Centralized API error handler
+app.use((err, req, res, next) => {
+    const isApi = req.originalUrl.startsWith("/api/");
+    const isCorsError = typeof err?.message === "string" && err.message.startsWith("CORS not allowed");
+    const status = err.status || (isCorsError ? 403 : 500);
+
+    if (status >= 500) {
+        console.error("Server error:", err);
+    }
+
+    if (isApi) {
+        return res.status(status).json({
+            error: err.message || "Internal Server Error"
+        });
+    }
+
+    next(err);
+});
+
 // SPA Fallback (Serve index.html for non-API routes)
 app.get(/(.*)/, (req, res) => {
+    res.set("Cache-Control", "no-store");
     res.sendFile(path.join(__dirname, "../client/dist/index.html"));
 });
 

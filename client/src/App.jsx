@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
 import { Shield, Link as LinkIcon } from 'lucide-react';
@@ -43,7 +44,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const HistoryView = lazy(() => import('./components/History/HistoryView'));
 const RoomManager = lazy(() => import('./components/Rooms/RoomManager'));
 
-function App() {
+function MainApp() {
   const dispatch = useDispatch();
   const { addToHistory, isEnabled: isHistoryEnabled } = useHistory();
   const { playSuccess, playError, playPop } = useSound();
@@ -65,15 +66,6 @@ function App() {
   // Local State
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // Routing State
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const handleNavigation = () => setCurrentPath(window.location.pathname);
-    window.addEventListener('popstate', handleNavigation);
-    return () => window.removeEventListener('popstate', handleNavigation);
-  }, []);
-
   // Restore Room Session if exists
   useEffect(() => {
     const savedRoom = sessionStorage.getItem('netdrop_room_session');
@@ -84,13 +76,6 @@ function App() {
 
   // Track if we should auto-download the incoming file
   const autoDownloadRef = React.useRef(true); // Default to true (safe default)
-
-  const isDownloadPage = currentPath.startsWith('/download/');
-  const isPairDropAlt = currentPath === '/pairdrop-alternative';
-  const isSnapDropAlt = currentPath === '/snapdrop-alternative';
-  const isAirDropWin = currentPath === '/airdrop-for-windows';
-  const isLandingPage = isPairDropAlt || isSnapDropAlt || isAirDropWin;
-  const isNotFound = !isDownloadPage && !isLandingPage && currentPath !== '/' && currentPath !== '';
 
   const [textModal, setTextModal] = useState({
     isOpen: false,
@@ -110,10 +95,6 @@ function App() {
       dispatch(setActiveTab('local'));
     }
   }, [activeTab, dispatch]);
-
-  if (isNotFound) {
-    return <NotFound />;
-  }
 
   // Setup WebRTC Listeners (Using Context)
   useEffect(() => {
@@ -486,18 +467,6 @@ function App() {
     }
   };
 
-  if (isDownloadPage) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <Toaster position="bottom-center" />
-        <div className="fixed inset-0 z-[-1] pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse-slow" />
-        </div>
-        <SecureDownload />
-      </div>
-    );
-  }
-
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // ... (existing code)
@@ -589,14 +558,7 @@ function App() {
         onProfileClick={() => setShowProfileModal(true)}
       />
 
-      {/* Landing Pages (no nav/modals) */}
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
-        {isPairDropAlt && <PairDropAlternative />}
-        {isSnapDropAlt && <SnapDropAlternative />}
-        {isAirDropWin && <AirDropForWindows />}
-      </Suspense>
-
-      <main className={`relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden ${isLandingPage ? 'hidden' : ''}`}>
+      <main className="relative z-10 flex-1 w-full flex flex-col pb-20 md:pb-0 safe-bottom isolate transition-all duration-300 overflow-hidden">
         {activeTab === 'local' ? (
           <div className="w-full h-full flex flex-col items-center justify-center duration-500">
             <div className="w-full h-full max-w-[1600px] mx-auto relative px-4 flex items-center justify-center">
@@ -657,6 +619,57 @@ function App() {
         )}
       </main>
     </div>
+  );
+}
+
+const DownloadLayout = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <Toaster position="bottom-center" />
+    <div className="fixed inset-0 z-[-1] pointer-events-none">
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse-slow" />
+    </div>
+    <SecureDownload />
+  </div>
+);
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/download/:fileId" element={<DownloadLayout />} />
+      <Route
+        path="/pairdrop-alternative"
+        element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            <PairDropAlternative />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/snapdrop-alternative"
+        element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            <SnapDropAlternative />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/airdrop-for-windows"
+        element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            <AirDropForWindows />
+          </Suspense>
+        }
+      />
+      <Route path="/" element={<MainApp />} />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            <NotFound />
+          </Suspense>
+        }
+      />
+    </Routes>
   );
 }
 

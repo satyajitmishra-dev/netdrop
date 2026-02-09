@@ -17,6 +17,26 @@ const getHeaders = () => {
     };
 };
 
+const parseError = async (response) => {
+    let message = `Request failed (${response.status})`;
+
+    try {
+        const data = await response.json();
+        if (data?.error) message = data.error;
+        else if (data?.message) message = data.message;
+        else if (typeof data === "string") message = data;
+    } catch {
+        try {
+            const text = await response.text();
+            if (text) message = text;
+        } catch {
+            // Fallback to status-based message
+        }
+    }
+
+    throw new Error(message);
+};
+
 export const apiService = {
     // Initialize upload session & get presigned URL
     initUpload: async (metadata) => {
@@ -25,7 +45,7 @@ export const apiService = {
             headers: getHeaders(),
             body: JSON.stringify(metadata),
         });
-        if (!response.ok) throw new Error("Failed to init upload (Unauthorized?)");
+        if (!response.ok) await parseError(response);
         return await response.json();
     },
 
@@ -38,14 +58,17 @@ export const apiService = {
                 "Content-Type": "application/octet-stream",
             },
         });
-        if (!response.ok) throw new Error("Failed to upload to Cloud storage");
+        if (!response.ok) {
+            const message = `Upload failed (${response.status})`;
+            throw new Error(message);
+        }
         return true;
     },
 
     // Get download link
     getDownloadLink: async (fileId) => {
         const response = await fetch(`${API_URL}/files/download/${fileId}`);
-        if (!response.ok) throw new Error("Failed to get download link");
+        if (!response.ok) await parseError(response);
         return await response.json();
     },
 
@@ -54,7 +77,7 @@ export const apiService = {
         const response = await fetch(`${API_URL}/files/list`, {
             headers: getHeaders()
         });
-        if (!response.ok) throw new Error("Failed to list files");
+        if (!response.ok) await parseError(response);
         return await response.json();
     }
 };
